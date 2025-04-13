@@ -14,7 +14,7 @@
     "build:node": "pnpm run prisma:deploy && npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "pnpm dlx tailwindcss init -p",
+    "test": "npm install tailwindcss@4.0.17 @tailwindcss/postcss",
     "prisma:format": "npx prisma format",
     "prisma:generate": "npx prisma generate",
     "prisma:dev": "npx prisma migrate dev",
