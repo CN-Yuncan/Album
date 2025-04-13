@@ -42,7 +42,7 @@ const baseConfig = {
   },
   experimental: {
     // 保留推荐使用的优化选项
-    optimizeCss: true,
+    optimizeCss: false,
     legacyBrowsers: false,
     // 已移除不推荐配置
   }
