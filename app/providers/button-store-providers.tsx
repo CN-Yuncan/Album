@@ -1,51 +1,41 @@
-'use client'
+// app/providers/button-store-providers.tsx
+'use client';
 
-import { type ReactNode, createContext, useRef, useContext } from 'react'
-import { type StoreApi, useStore } from 'zustand'
 import { create } from 'zustand'
-import { type ButtonStore, createButtonStore, initButtonStore } from '~/stores/button-stores'
+import { createContext, useContext, useRef } from 'react'
 
-export const ButtonStoreContext = createContext<StoreApi<ButtonStore> | null>(
-  null,
-)
-
+// 1. 创建独立的状态类型
 type ButtonState = {
-  activeType: 'default' | 'important';
-  setActiveType: (type: 'default' | 'important') => void;
+  activeType: 'default' | 'important'
+  setActiveType: (type: 'default' | 'important') => void
 }
 
-export const useButtonStore = create<ButtonState>((set) => ({
-  activeType: 'default',
-  setActiveType: (type) => set({ activeType: type })
-}))
+// 2. 创建Zustand store
+const createButtonStore = () =>
+    create<ButtonState>((set) => ({
+      activeType: 'default',
+      setActiveType: (type) => set({ activeType: type }),
+    }))
 
-export interface ButtonStoreProviderProps {
-  children: ReactNode
-}
+// 3. 创建React Context
+const ButtonStoreContext = createContext<ReturnType<typeof createButtonStore> | null>(null)
 
-export const ButtonStoreProvider = ({
-  children,
-}: ButtonStoreProviderProps) => {
-  const storeRef = useRef<StoreApi<ButtonStore>>()
+// 4. 提供上下文组件
+export function ButtonStoreProvider({ children }: { children: React.ReactNode }) {
+  const storeRef = useRef<ReturnType<typeof createButtonStore>>()
   if (!storeRef.current) {
-    storeRef.current = createButtonStore(initButtonStore())
+    storeRef.current = createButtonStore()
   }
-
   return (
-    <ButtonStoreContext.Provider value={storeRef.current}>
-      {children}
-    </ButtonStoreContext.Provider>
+      <ButtonStoreContext.Provider value={storeRef.current}>
+        {children}
+      </ButtonStoreContext.Provider>
   )
 }
 
-export const useButtonStore = <T,>(
-  selector: (store: ButtonStore) => T,
-): T => {
-  const buttonStoreContext = useContext(ButtonStoreContext)
-
-  if (!buttonStoreContext) {
-    throw new Error(`useButtonStore must be use within ButtonStoreProvider`)
-  }
-
-  return useStore(buttonStoreContext, selector)
+// 5. 自定义hook（修复命名冲突）
+export const useButtonStore = <T,>(selector: (state: ButtonState) => T) => {
+  const store = useContext(ButtonStoreContext)
+  if (!store) throw new Error('Missing ButtonStoreProvider')
+  return store(selector)
 }

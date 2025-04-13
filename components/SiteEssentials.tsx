@@ -6,7 +6,7 @@ import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useStore } from 'zustand';
-import { useButtonStore } from '~/app/providers/button-store-providers';
+import { useButtonStore } from '~/app/providers/button-store-providers'
 
 // 三维粒子光标
 export function MagicCursor() {
@@ -133,7 +133,8 @@ export function DynamicBackground() {
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
     const lastClickTime = useRef(0);
-    const { activeType } = useStore(useButtonStore);
+    const activeType = useButtonStore((state) => state.activeType)
+    const setActiveType = useButtonStore((state) => state.setActiveType)
 
     const [{ scale, opacity }, api] = useSpring(() => ({
         scale: 0,
