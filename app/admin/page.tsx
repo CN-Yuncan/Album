@@ -1,7 +1,7 @@
 import { fetchImagesAnalysis } from '~/server/db/query/images'
 import CardList from '~/components/admin/dashboard/card-list'
 import type { AnalysisDataProps } from '~/types/props'
-import CursorWrapper from '@/components/CursorWrapper';
+import CursorWrapper from '~/components/CursorWrapper';
 
 export default async function Admin() {
   const getData = async (): Promise<AnalysisDataProps> => {
