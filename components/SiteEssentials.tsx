@@ -83,44 +83,33 @@ export function MagicCursor() {
     const cursorRef = useRef<HTMLDivElement>(null);
     const isPressed = useRef(false);
 
-    // SSR安全的初始位置
-    const getInitialPosition = (dimension: 'width' | 'height') => {
-        if (typeof window === 'undefined') return 0; // SSR时返回0
-        return window[`inner${dimension}`] / 2;
-    };
+    // 安全初始化主光标
+    const getInitialX = () => typeof window !== 'undefined' ? window.innerWidth/2 : 0;
+    const getInitialY = () => typeof window !== 'undefined' ? window.innerHeight/2 : 0;
 
-    // 主光标动画（SSR安全初始化）
+    // 主光标动画
     const [{ x, y }, api] = useSpring(() => ({
-        x: getInitialPosition('Width'),  // 首字母大写以匹配dimension参数
-        y: getInitialPosition('Height'),
-        config: {
-            mass: 0.4,
-            tension: 800,
-            friction: 28,
-            clamp: true,
-            precision: 0.1
-        }
+        x: getInitialX(),
+        y: getInitialY(),
+        config: { mass: 0.4, tension: 800, friction: 28 }
     }));
 
-    // 新增：粒子拖影数组
+    // 正确声明拖影系统（使用useMemo保持引用稳定）
     const trailCount = 5;
-    const trailRefs = useRef<ReturnType<typeof useSpring>[]>([]);
-
-    useEffect(() => {
-        // 初始化拖影系统
-        trailRefs.current = Array.from({ length: trailCount }).map((_, i) =>
-            useSpring({
-                x: getInitialPosition('Width'),
-                y: getInitialPosition('Height'),
-                config: {
-                    tension: 600 - i * 80,
-                    friction: 20,
-                    mass: 0.3,
-                    delay: i * 15
-                }
-            })
-        );
-    }, []);
+    const trails = useMemo(() =>
+            Array.from({ length: trailCount }).map((_, i) =>
+                useSpring({
+                    x: getInitialX(),
+                    y: getInitialY(),
+                    config: {
+                        tension: 600 - i * 80,
+                        friction: 20,
+                        mass: 0.3,
+                        delay: i * 15
+                    }
+                })
+            ),
+        []); // 空依赖确保只创建一次
 
 
     // 动态参数
@@ -174,11 +163,11 @@ export function MagicCursor() {
             api.start({ x: currentX, y: currentY });
 
             // 更新所有拖影
-            trailRefs.current.forEach((trailApi, i) => {
+            trails.forEach((trailApi, index) => {
                 trailApi.start({
                     x: currentX,
                     y: currentY,
-                    delay: i * 15
+                    delay: index * 15
                 });
             });
 
@@ -279,20 +268,13 @@ export function MagicCursor() {
             </animated.div>
 
             {/* 粒子拖影系统 */}
-            {trailRefs.current.map(([trailStyles], i) => (
+            {trails.map(([styles], index) => (
                 <animated.div
-                    key={i}
-                    className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
-                        w-6 h-4 rounded-[30%] backdrop-blur-sm"
+                    key={`trail-${index}`}
                     style={{
-                        ...trailStyles,
-                        opacity: 0.8 - i * 0.15,
-                        scale: 0.7 - i * 0.1,
-                        backgroundImage: `conic-gradient(
-                            from ${rotateZ.get()}deg,
-                            hsl(${200 + i * 40} 100% 60% / 0.6),
-                            hsl(${240 + i * 40} 100% 50% / 0.5)
-                        )`
+                        ...styles,
+                        opacity: 0.8 - index * 0.15,
+                        scale: 0.7 - index * 0.1
                     }}
                 />
             ))}
