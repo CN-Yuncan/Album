@@ -4,7 +4,6 @@ import Gallery from '~/components/album/gallery'
 import { fetchConfigsByKeys } from '~/server/db/query/configs'
 import AlbumGallery from '~/components/album/album-gallery'
 import 'react-photo-album/masonry.css'
-import CursorWrapper from '~/components/CursorWrapper'
 
 export default async function Home() {
   const getData = async (pageNum: number, album: string) => {
@@ -48,7 +47,6 @@ export default async function Home() {
       {currentStyle && currentStyle === '1' ?
         <Gallery {...props} /> : <AlbumGallery {...props} />
       }
-      <CursorWrapper />
     </>
   )
 }

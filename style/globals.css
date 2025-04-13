@@ -177,17 +177,6 @@
     perspective: 1000px;
   }
 
-  /* 光标光晕动画 */
-  .shadow-glow {
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { filter: drop-shadow(0 0 10px rgba(100, 100, 255, 0.3)); }
-    50% { filter: drop-shadow(0 0 15px rgba(100, 100, 255, 0.5)); }
-  }
-}
-
 /* 背景过渡优化 */
 .bg-cover {
   @apply transition-[background-image] duration-1000 ease-in-out;
@@ -230,11 +219,6 @@
   }
 }
 
-/* 全局光标隐藏 */
-html, body, * {
-  cursor: none !important;
-}
-
 /* 提升交互元素层级 */
 button, a, [role="button"] {
   position: relative;
@@ -249,18 +233,6 @@ button, a, [role="button"] {
 
 button:active {
   transform: scale(0.96);
-}
-
-/* 导航栏修复 */
-.navbar {
-  @apply bg-transparent backdrop-blur-lg;
-  background: rgba(var(--background-rgb), 0.8) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.dark .navbar {
-  background: rgba(0, 0, 0, 0.5) !important;
-  border-bottom-color: rgba(255,255,255,0.05);
 }
 
 /* 自定义属性 */

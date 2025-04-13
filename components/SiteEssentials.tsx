@@ -1,8 +1,7 @@
 // components/SiteEssentials.tsx
-'use client';
-
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useSpring, animated, useSprings } from '@react-spring/web';
+import { useSpring, animated, config, useChain } from '@react-spring/web';
+import { useMotionValue, useTransform, motion, useVelocity } from 'framer-motion';
+import { useEffect, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { create } from 'zustand';
 
@@ -10,34 +9,33 @@ interface MouseStore {
     position: [number, number];
     velocity: number;
     pressure: number;
-    update: (pos: [number, number], vel: number, pressure: number) => void;
+    update: (pos: [number, number], vel: number, pressure?: number) => void;
 }
 
 export const useMouseStore = create<MouseStore>((set) => ({
     position: [0, 0],
     velocity: 0,
     pressure: 0,
-    update: (pos, vel, pressure) => set({ position: pos, velocity: vel, pressure })
+    update: (pos, vel, pressure = 0) => set({ position: pos, velocity: vel, pressure })
 }));
 
-// 流体动态背景
+// 动态流体背景
 export function DynamicBackground() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const { resolvedTheme } = useTheme();
     const { position: [x, y], velocity, pressure } = useMouseStore();
-    const [isClient, setIsClient] = useState(false);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        setIsClient(true); // 标记客户端环境
-        if (typeof window === 'undefined') return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext('2d')!;
-        let animationFrame: number;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        let frame: number;
         const particles = Array.from({ length: 200 }, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -46,256 +44,202 @@ export function DynamicBackground() {
             life: 1
         }));
 
-        const draw = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 背景色
-            ctx.fillStyle = resolvedTheme === 'dark' ? '#0a0a0f' : '#f5f5ff';
+        const render = () => {
+            ctx.fillStyle = resolvedTheme === 'dark' ? 'rgba(10,10,20,0.1)' : 'rgba(255,255,255,0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 粒子系统
-            particles.forEach((p, i) => {
-                const dx = p.x - x;
-                const dy = p.y - y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const force = Math.min(2000/(dist*dist), 0.5);
+            particles.forEach(p => {
+                // 粒子向光标方向流动
+                const dx = x - p.x;
+                const dy = y - p.y;
+                const dist = Math.hypot(dx, dy);
+                const force = Math.min(5000 / (dist * dist + 1), 50);
 
-                p.vx += (dx/dist * -force) + (Math.random()-0.5)*0.2;
-                p.vy += (dy/dist * -force) + (Math.random()-0.5)*0.2;
+                p.vx += (dx / dist) * force * 0.01 + (Math.random() - 0.5) * 0.2;
+                p.vy += (dy / dist) * force * 0.01 + (Math.random() - 0.5) * 0.2;
 
-                p.x = (p.x + p.vx + canvas.width) % canvas.width;
-                p.y = (p.y + p.vy + canvas.height) % canvas.height;
-
-                // 绘制
-                ctx.beginPath();
-                ctx.strokeStyle = resolvedTheme === 'dark' ?
-                    `rgba(150,180,255,${0.2*p.life})` :
-                    `rgba(50,80,150,${0.1*p.life})`;
-                ctx.lineWidth = 1.5;
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x - p.vx*3, p.y - p.vy*3);
-                ctx.stroke();
-
-                p.life = dist < 100 ? Math.min(p.life + 0.1, 1) : Math.max(p.life - 0.005, 0.2);
+                // 速度衰减
                 p.vx *= 0.95;
                 p.vy *= 0.95;
+
+                p.x += p.vx + velocity * 0.01;
+                p.y += p.vy + velocity * 0.01;
+
+                // 边界循环
+                if (p.x < 0) p.x += canvas.width;
+                if (p.x > canvas.width) p.x -= canvas.width;
+                if (p.y < 0) p.y += canvas.height;
+                if (p.y > canvas.height) p.y -= canvas.height;
+
+                // 绘制粒子
+                ctx.beginPath();
+                ctx.fillStyle = resolvedTheme === 'dark'
+                    ? `hsla(220, 50%, 70%, ${p.life})`
+                    : `hsla(40, 80%, 50%, ${p.life})`;
+                ctx.arc(p.x, p.y, 2 * p.life, 0, Math.PI * 2);
+                ctx.fill();
             });
 
-            animationFrame = requestAnimationFrame(draw);
+            frame = requestAnimationFrame(render);
         };
 
-        draw();
-        return () => cancelAnimationFrame(animationFrame);
-    }, [resolvedTheme]);
+        render();
+        return () => cancelAnimationFrame(frame);
+    }, [resolvedTheme, x, y, velocity]);
 
-    if (!isClient) return null; // SSR时不渲染
     return (
-        <canvas
+        <motion.canvas
             ref={canvasRef}
-            className="fixed inset-0 z-0 opacity-30 blur-[2px]"
+            className="fixed inset-0 z-0 opacity-50 mix-blend-soft-light"
             style={{
-                width: '100vw',
-                height: '100vh',
-                mixBlendMode: resolvedTheme === 'dark' ? 'screen' : 'multiply'
+                scale: 1 + pressure * 0.2
             }}
         />
     );
 }
 
-// 量子流体光标
+// 量子流光光标
 export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
-    const trailCount = 8;
-    const [isMounted, setIsMounted] = useState(false);
-    const [safePos, setSafePos] = useState([0, 0]); // 使用state延迟设置
+    const trailRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const { position: [x, y], velocity } = useMouseStore();
+    const vx = useVelocity(x);
+    const vy = useVelocity(y);
 
     // 主光标动画
     const [{ pos }, api] = useSpring(() => ({
-        pos: safePos,
-        config: { mass: 0.8, tension: 1200, friction: 40 }
+        pos: [x, y],
+        config: { mass: 0.4, tension: 1200, friction: 25 }
     }));
 
-    // 拖影粒子系统
-    const [trailSprings, trailApi] = useSprings(trailCount, (i) => ({
-        pos: safePos,
-        opacity: 1 - i/trailCount,
-        scale: 1 - i/(trailCount*2),
-        config: { tension: 800, friction: 30 }
-    }));
+    // 动态参数
+    const scale = useTransform(() => 1 + Math.min(velocity / 500, 0.6));
+    const rotate = useTransform(() => Math.atan2(vy.get(), vx.get()) * 180 / Math.PI);
+    const gradient = useTransform(
+        [scale, rotate],
+        ([s, r]) => `linear-gradient(${r}deg, 
+            ${theme === 'dark' ? '#a0d8ff55' : '#ffd70055'} 0%,
+            ${theme === 'dark' ? '#6a8fff88' : '#ff8c0088'} ${s * 25}%,
+            ${theme === 'dark' ? '#3a0ca355' : '#ff450055'} 100%)`
+    );
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        setIsMounted(true);
-        setSafePos([window.innerWidth/2, window.innerHeight/2]); // 客户端设置真实位置
+        api.start({ pos: [x, y] });
 
-        let lastX = window.innerWidth/2;
-        let lastY = window.innerHeight/2;
-        let velocity = 0;
+        // 拖影效果
+        trailRefs.current.forEach((trail, i) => {
+            const delay = i * 0.015;
+            setTimeout(() => {
+                if (trail) {
+                    trail.style.transform = `translate(${x - 12}px, ${y - 12}px)`;
+                    trail.style.opacity = `${1 - i * 0.2}`;
+                }
+            }, delay * 1000);
+        });
 
-        const updateStore = useMouseStore.getState().update;
-        const handleMouseMove = (e: MouseEvent) => {
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const deltaX = currentX - lastX;
-            const deltaY = currentY - lastY;
-            velocity = Math.hypot(deltaX, deltaY);
+        // 交互元素检测
+        const target = document.elementFromPoint(x, y);
+        const isInteractive = target?.closest('a, button, [role="button"]');
+        if (cursorRef.current) {
+            cursorRef.current.style.boxShadow = isInteractive
+                ? `0 0 30px ${theme === 'dark' ? '#a0d8ff' : '#ffd700'}`
+                : 'none';
+        }
+    }, [x, y]);
 
-            api.start({ pos: [currentX, currentY] });
-            trailApi.start((i) => ({
-                delay: i * 8,
-                pos: [currentX - deltaX*(i/trailCount), currentY - deltaY*(i/trailCount)]
-            }));
-
-            // 动态效果
-            scale.set(1 + Math.min(velocity*0.008, 0.6));
-            turbulence.set(Math.min(velocity*0.02, 1));
-
-            // 交互检测
-            const target = e.target as HTMLElement;
-            const isInteractive = target?.closest('a, button, [role="button"]');
-            cursorRef.current?.style.setProperty('--energy', isInteractive ? '0.8' : '0');
-
-            updateStore([currentX, currentY], velocity, turbulence.get());
-
-            lastX = currentX;
-            lastY = currentY;
-            document.body.style.cursor = 'none';
-        };
-
-        window.addEventListener('mousemove', handleMouseMove);
-        return () => window.removeEventListener('mousemove', handleMouseMove);
-    }, []);
-
-    if (!isMounted) return null;
     return (
         <>
-            {/* 拖影粒子 */}
-            {trailSprings.map((style, i) => (
-                <animated.div
-                    key={i}
-                    className="absolute pointer-events-none rounded-full -translate-x-1/2 -translate-y-1/2"
-                    style={{
-                        width: 24 + i*2,
-                        height: 24 + i*2,
-                        opacity: style.opacity,
-                        scale: style.scale,
-                        x: style.pos.to((x: number) => x),
-                        y: style.pos.to((y: number) => y),
-                        background: `radial-gradient(circle at 35% 35%, 
-                            ${theme === 'dark' ? '#a0f2ff' : '#3a6afc'}, 
-                            transparent 70%)`,
-                        filter: `blur(${i*2}px)`
-                    }}
-                />
-            ))}
-
             {/* 主光标 */}
             <animated.div
                 ref={cursorRef}
-                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2
-                    w-9 h-9 rounded-full backdrop-blur-xl"
+                className="pointer-events-none fixed z-50 w-6 h-6 rounded-full
+                    backdrop-blur-xl border-2 border-opacity-50 transition-all"
                 style={{
-                    x: pos.to((x: number) => x),
-                    y: pos.to((y: number) => y),
+                    x: pos.to(x => x - 12),
+                    y: pos.to(y => y - 12),
                     scale,
-                    background: `radial-gradient(circle at 35% 35%, 
-                        ${theme === 'dark' ? 'rgba(160,242,255,0.3)' : 'rgba(58,106,252,0.3)'}, 
-                        transparent 70%)`,
-                    boxShadow: energy.to(e => `
-                        0 0 15px 2px ${theme === 'dark' ? '#a0f2ff66' : '#3a6afc33'},
-                        0 0 30px 10px ${theme === 'dark' ? '#a0f2ff22' : '#3a6afc11'}
-                    `),
-                    filter: turbulence.to(t => `
-                        url(#turbulence)
-                        drop-shadow(0 0 2px ${theme === 'dark' ? '#a0f2ff' : '#3a6afc'})
-                    `)
+                    rotate,
+                    background: gradient,
+                    borderColor: gradient
                 }}
-            >
-                <svg className="absolute inset-0">
-                    <filter id="turbulence">
-                        <feTurbulence
-                            type="fractalNoise"
-                            baseFrequency={energy.to(e => `0.00${1 + e}`)}
-                            numOctaves="3"
-                        />
-                        <feDisplacementMap in="SourceGraphic" scale={energy.to(e => e*8)} />
-                    </filter>
-                </svg>
-            </animated.div>
+            />
+
+            {/* 流体拖影 */}
+            {[...Array(5)].map((_, i) => (
+                <div
+                    key={i}
+                    ref={el => trailRefs.current[i] = el}
+                    className="pointer-events-none fixed w-6 h-6 rounded-full
+                        backdrop-blur-sm transition-all duration-300"
+                    style={{
+                        background: theme === 'dark'
+                            ? 'radial-gradient(#a0d8ff33, transparent 70%)'
+                            : 'radial-gradient(#ffd70033, transparent 70%)',
+                        opacity: 0
+                    }}
+                />
+            ))}
         </>
     );
 }
 
-// 量子涟漪效果
+// 全息涟漪效果
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
-    const [springs, api] = useSprings(0, () => ({
-        pos: [0, 0],
-        scale: 1,
-        opacity: 1,
-        config: { tension: 600, friction: 20 }
-    }));
-    const [isClient, setIsClient] = useState(false);
+    const { position: [x, y], pressure } = useMouseStore();
+    const circles = useRef<HTMLDivElement[]>([]);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+    const createRipple = () => {
+        const circle = circles.current.find(c => !c.style.opacity);
+        if (!circle) return;
 
-    useEffect(() => {
-        if (!isClient) return;
+        circle.style.left = `${x - 50}px`;
+        circle.style.top = `${y - 50}px`;
+        circle.style.opacity = '1';
+        circle.style.transform = 'scale(0)';
 
-        const handleClick = (e: MouseEvent) => {
-            const newParticles = Array.from({ length: 8 }, (_, i) => ({
-                angle: (Math.PI * 2 * i) / 8 + Math.random() * 0.2,
-                speed: 3 + Math.random() * 4
-            }));
+        const animation = circle.animate([
+            { transform: 'scale(0)', opacity: 1 },
+            { transform: 'scale(2)', opacity: 0 }
+        ], {
+            duration: 800 * (1 + pressure),
+            easing: 'cubic-bezier(0.23, 1, 0.32, 1)'
+        });
 
-            api.start(index => ({
-                from: {
-                    pos: [e.clientX, e.clientY],
-                    scale: 0.5,
-                    opacity: 0.8
-                },
-                to: async next => {
-                    await next({
-                        pos: [
-                            e.clientX + Math.cos(newParticles[index].angle) * 100,
-                            e.clientY + Math.sin(newParticles[index].angle) * 100
-                        ],
-                        scale: 2,
-                        opacity: 0
-                    });
-                },
-                delay: index => index * 20
-            }));
+        animation.onfinish = () => {
+            circle.style.opacity = '0';
         };
+    };
 
+    useEffect(() => {
+        const handleClick = () => {
+            useMouseStore.getState().update([0,0], 0, Math.random());
+            createRipple();
+        };
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [isClient]);
+    }, []);
 
-    if (!isClient) return null;
     return (
-        <>
-            {springs.map((style, i) => (
-                <animated.div
+        <div className="fixed inset-0 pointer-events-none z-40">
+            {[...Array(3)].map((_, i) => (
+                <div
                     key={i}
-                    className="absolute pointer-events-none w-2 h-2 rounded-full"
+                    ref={el => circles.current[i] = el!}
+                    className="absolute w-24 h-24 rounded-full border
+                        opacity-0 transition-opacity"
                     style={{
-                        x: style.pos.to((x: number) => x),
-                        y: style.pos.to((y: number) => y),
-                        scale: style.scale,
-                        opacity: style.opacity,
-                        background: resolvedTheme === 'dark' ?
-                            'radial-gradient(circle, #a0f2ff, transparent)' :
-                            'radial-gradient(circle, #3a6afc, transparent)',
-                        boxShadow: resolvedTheme === 'dark' ?
-                            '0 0 10px #a0f2ff' : '0 0 10px #3a6afc'
+                        borderColor: resolvedTheme === 'dark'
+                            ? `hsl(220, 80%, ${70 - i*15}%)`
+                            : `hsl(40, 100%, ${50 - i*10}%)`,
+                        filter: 'blur(10px)',
+                        margin: '-24px'
                     }}
                 />
             ))}
-        </>
+        </div>
     );
 }
 
