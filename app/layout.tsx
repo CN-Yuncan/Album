@@ -11,7 +11,7 @@ import { ButtonStoreProvider } from '~/app/providers/button-store-providers'
 import { ConfigStoreProvider } from '~/app/providers/config-store-providers'
 
 // 核心组件
-import { MagicCursor, Footer, DynamicBackground } from '~/components/SiteEssentials'
+import {  MagicCursor, Footer, ClickEffects, DynamicBackground } from '~/components/SiteEssentials'
 
 // 数据获取
 import { fetchConfigsByKeys } from '~/server/db/query/configs'

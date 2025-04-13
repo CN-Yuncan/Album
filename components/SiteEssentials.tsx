@@ -5,6 +5,8 @@ import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
+import { useStore } from 'zustand';
+import { useButtonStore } from '~/app/providers/button-store-providers';
 
 // 三维粒子光标
 export function MagicCursor() {
@@ -124,6 +126,63 @@ export function DynamicBackground() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent" />
         </div>
+    );
+}
+
+// 量子涟漪效果（更新版）
+export function ClickEffects() {
+    const { resolvedTheme } = useTheme();
+    const lastClickTime = useRef(0);
+    const { activeType } = useStore(useButtonStore);
+
+    const [{ scale, opacity }, api] = useSpring(() => ({
+        scale: 0,
+        opacity: 0,
+        config: { tension: 600, friction: 30 }
+    }));
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            // 节流处理
+            if (Date.now() - lastClickTime.current < 100) return;
+            lastClickTime.current = Date.now();
+
+            // 根据按钮类型变化效果
+            const intensity = activeType === 'important' ? 2 : 1;
+
+            api.start({
+                from: {
+                    scale: 0.5 * intensity,
+                    opacity: 0.8 / intensity
+                },
+                to: {
+                    scale: 3 * intensity,
+                    opacity: 0
+                },
+                config: {
+                    tension: 500 * intensity,
+                    friction: 20 / intensity
+                }
+            });
+        };
+
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [activeType]);
+
+    return (
+        <animated.div
+            className="fixed -translate-x-1/2 -translate-y-1/2 pointer-events-none
+                w-16 h-16 rounded-full mix-blend-screen"
+            style={{
+                scale,
+                opacity,
+                backgroundColor: resolvedTheme === 'dark'
+                    ? 'rgba(255,255,255,0.15)'
+                    : 'rgba(0,0,0,0.1)',
+                transform: 'translate(-50%, -50%)'
+            }}
+        />
     );
 }
 

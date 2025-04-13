@@ -2,12 +2,22 @@
 
 import { type ReactNode, createContext, useRef, useContext } from 'react'
 import { type StoreApi, useStore } from 'zustand'
-
+import { create } from 'zustand'
 import { type ButtonStore, createButtonStore, initButtonStore } from '~/stores/button-stores'
 
 export const ButtonStoreContext = createContext<StoreApi<ButtonStore> | null>(
   null,
 )
+
+type ButtonState = {
+  activeType: 'default' | 'important';
+  setActiveType: (type: 'default' | 'important') => void;
+}
+
+export const useButtonStore = create<ButtonState>((set) => ({
+  activeType: 'default',
+  setActiveType: (type) => set({ activeType: type })
+}))
 
 export interface ButtonStoreProviderProps {
   children: ReactNode
