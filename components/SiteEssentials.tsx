@@ -101,6 +101,8 @@ export function MagicCursor() {
                 useSpring({
                     x: getInitialX(),
                     y: getInitialY(),
+                    opacity: 0.8 - i * 0.15,
+                    scale: 0.7 - i * 0.1,
                     config: {
                         tension: 600 - i * 80,
                         friction: 20,
@@ -268,13 +270,21 @@ export function MagicCursor() {
             </animated.div>
 
             {/* 粒子拖影系统 */}
-            {trails.map(([styles], index) => (
+            {trails.map((trail, index) => (
                 <animated.div
                     key={`trail-${index}`}
+                    className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
+                        w-6 h-4 rounded-[30%] backdrop-blur-sm"
                     style={{
-                        ...styles,
-                        opacity: 0.8 - index * 0.15,
-                        scale: 0.7 - index * 0.1
+                        x: trail.x,
+                        y: trail.y,
+                        opacity: trail.opacity,
+                        scale: trail.scale,
+                        backgroundImage: `conic-gradient(
+                            from ${rotateZ.get()}deg,
+                            hsl(${200 + index * 40} 100% 60% / 0.6),
+                            hsl(${240 + index * 40} 100% 50% / 0.5)
+                        )`
                     }}
                 />
             ))}
