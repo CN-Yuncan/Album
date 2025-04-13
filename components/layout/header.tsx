@@ -21,18 +21,18 @@ export default async function Header(props: Readonly<AlbumDataProps>) {
                 position: 'relative',
             }}
         >
-            {/* 添加动态光效装饰层 */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity
-                bg-[radial-gradient(circle_at_50%_-20%,#fff_10%,transparent_60%)]
-                dark:bg-[radial-gradient(circle_at_50%_-20%,#4f46e5_10%,transparent_60%)]"/>
-            <div className="justify-start">
+            <div className="justify-start relative z-20">
                 <Logo/>
             </div>
             <div className="flex gap-1 flex-1 select-none justify-center w-full">
             </div>
-            <div className="flex h-full items-center space-x-2 justify-end">
+            <div className="flex h-full items-center space-x-2 justify-end relative z-20">
                 <HeaderIconGroup {...props} />
             </div>
+            {/* 添加动态光效装饰层 */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity
+                bg-[radial-gradient(circle_at_50%_-20%,#fff_10%,transparent_60%)]
+                dark:bg-[radial-gradient(circle_at_50%_-20%,#4f46e5_10%,transparent_60%)] pointer-events-none z-10"/>
         </div>
     );
 }
