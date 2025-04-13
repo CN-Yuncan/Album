@@ -12,24 +12,25 @@ export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
 
-    // 主光标物理动画
+    // 主光标动画
     const [{ pos }, api] = useSpring(() => ({
-        pos: [0, 0],
+        pos: [window.innerWidth/2, window.innerHeight/2],
         config: {
-            mass: 0.6,  // 减小质量减少惯性
-            tension: 680,  // 增加张力提升响应速度
-            friction: 32,  // 增大摩擦力抑制震荡
-            clamp: true  // 增加边界限制
+            mass: 0.6,
+            tension: 680,
+            friction: 32,
+            clamp: true,
+            precision: 0.1
         }
     }));
 
-    // 副光标延迟动画
+    // 拖影动画
     const [{ pos: trailPos }, trailApi] = useSpring(() => ({
-        pos: [0, 0],
-        config: { ...config.wobbly, precision: 0.001 }
+        pos: [window.innerWidth/2, window.innerHeight/2],
+        config: { ...config.stiff, precision: 0.1 }
     }));
 
-    // 动态响应参数
+    // 动态参数
     const scale = useMotionValue(1);
     const rotateZ = useMotionValue(0);
     const backgroundColor = useTransform(
@@ -41,50 +42,67 @@ export function MagicCursor() {
     );
 
     useEffect(() => {
-        let velocity = [0, 0];
+        let animationFrameId: number;
+        let lastX = window.innerWidth/2;
+        let lastY = window.innerHeight/2;
         let lastTime = Date.now();
 
-        const updateCursor = (e: MouseEvent) => {
-            // 新增：强制隐藏所有交互元素的默认光标
-            document.querySelectorAll('a, button, [role="button"]').forEach(el => {
-                (el as HTMLElement).style.cursor = 'none';
-            });
+        const handleMouseMove = (e: MouseEvent) => {
+            // 立即更新坐标
+            const currentX = e.clientX;
+            const currentY = e.clientY;
             const now = Date.now();
-            const deltaTime = Math.min(100, now - lastTime) / 1000;
-            const newVelocity = [
-                (e.clientX - pos.get()[0]) / deltaTime,
-                (e.clientY - pos.get()[1]) / deltaTime
-            ];
 
-            velocity = [
-                0.6 * velocity[0] + 0.4 * newVelocity[0],
-                0.6 * velocity[1] + 0.4 * newVelocity[1]
-            ];
+            // 计算速度
+            const deltaTime = (now - lastTime) || 1;
+            const velocityX = (currentX - lastX) / deltaTime;
+            const velocityY = (currentY - lastY) / deltaTime;
+            const speed = Math.hypot(velocityX, velocityY);
 
-            // 速度响应缩放
-            const normalizedSpeed = Math.min(speed, 5) / 5; // 限速5px/ms
-            const scaleValue = 1 + (Math.pow(normalizedSpeed, 0.7) * 0.6);
-            scale.set(scaleValue);
-            // 优化为带阈值限制
-            const MAX_ROTATION = 25;
-            const rotation = Math.min(speed * 12, MAX_ROTATION);
-            rotateZ.set(rotation);
+            // 更新动画
+            api.start({ pos: [currentX, currentY] });
+            trailApi.start({ pos: [currentX, currentY] });
 
-            api.start({ pos: [e.clientX, e.clientY] });
-            const dynamicDelay = Math.max(10, 50 - speed * 8);
-            setTimeout(() => trailApi.start({ pos: [e.clientX, e.clientY] }), dynamicDelay);
+            // 动态缩放和旋转
+            scale.set(1 + Math.min(speed * 0.02, 0.6));
+            rotateZ.set(Math.min(speed * 0.2, 25));
 
-            // 交互元素检测
+            // 交互状态检测
             const target = e.target as HTMLElement;
             const isInteractive = target?.closest('a, button, [role="button"]');
             cursorRef.current?.style.setProperty('--glow-scale', isInteractive ? '1.8' : '1');
 
+            // 更新坐标缓存
+            lastX = currentX;
+            lastY = currentY;
             lastTime = now;
+
+            // 隐藏原生光标
+            document.body.style.cursor = 'none';
+            document.querySelectorAll('button, a').forEach(el => {
+                (el as HTMLElement).style.cursor = 'none';
+            });
         };
 
-        document.body.style.cursor = 'none';
-        document.addEventListener('mousemove', updateCursor);
-        return () => document.removeEventListener('mousemove', updateCursor);
+        // 窗口大小变化处理
+        const handleResize = () => {
+            api.set({ pos: [lastX, lastY] });
+            trailApi.set({ pos: [lastX, lastY] });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('resize', handleResize);
+
+        // 初始化位置
+        api.start({ pos: [lastX, lastY] });
+        trailApi.start({ pos: [lastX, lastY] });
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(animationFrameId);
+            document.body.style.cursor = 'default';
+        };
     }, []);
 
     return (
@@ -92,12 +110,12 @@ export function MagicCursor() {
             {/* 主光标 */}
             <animated.div
                 ref={cursorRef}
-                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2
+                className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-1/2
                     w-8 h-8 rounded-full backdrop-blur-lg border
-                    shadow-[0_0_30px_10px_var(--glow-color)] transition-colors"
+                    shadow-[0_0_30px_10px_var(--glow-color)]"
                 style={{
-                    x: pos.to((x, y) => x),
-                    y: pos.to((x, y) => y),
+                    x: pos.to(x => x),
+                    y: pos.to(y => y),
                     scale,
                     rotateZ,
                     backgroundColor,
@@ -107,13 +125,13 @@ export function MagicCursor() {
                 } as any}
             />
 
-            {/* 粒子拖影 */}
+            {/* 拖影 */}
             <animated.div
-                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2
+                className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
                     w-6 h-6 rounded-full bg-current opacity-20"
                 style={{
-                    x: trailPos.to((x, y) => x),
-                    y: trailPos.to((x, y) => y),
+                    x: trailPos.to(x => x),
+                    y: trailPos.to(y => y),
                     scale: 0.8
                 }}
             />

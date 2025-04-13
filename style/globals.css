@@ -235,11 +235,16 @@ html, body, * {
   cursor: none !important;
 }
 
-/* 按钮点击修复 */
+/* 提升交互元素层级 */
 button, a, [role="button"] {
   position: relative;
-  z-index: 100;
-  transition: transform 0.2s ease;
+  z-index: 1001 !important; /* 必须高于光标层级 */
+}
+
+/* 强制穿透光标 */
+.magic-cursor {
+  pointer-events: none !important;
+  transform: translateZ(0);
 }
 
 button:active {
