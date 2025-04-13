@@ -13,6 +13,8 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ConfigStoreProvider } from '~/app/providers/config-store-providers'
 
+import { MagicCursor, Footer, ClickEffects } from '~/components/SiteEssentials';
+
 type Props = {
   params: { id: string }
   searchParams: { [key: string]: string | string[] | undefined }
@@ -35,33 +37,46 @@ export async function generateMetadata(
 }
 
 export default async function RootLayout({
-  children,
-}: Readonly<{
+                                           children,
+                                         }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  const locale = await getLocale()
-
-  const messages = await getMessages()
+  const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
-    <html className="overflow-y-auto scrollbar-hide" lang={locale} suppressHydrationWarning>
-    <body>
-    <SessionProviders>
-      <NextIntlClientProvider messages={messages}>
-        <ConfigStoreProvider>
-          <ButtonStoreProvider>
-            <ThemeProvider>
-              <ToasterProviders/>
-              <ProgressBarProviders>
-                {children}
-              </ProgressBarProviders>
-            </ThemeProvider>
-          </ButtonStoreProvider>
-        </ConfigStoreProvider>
-      </NextIntlClientProvider>
-    </SessionProviders>
-    </body>
-    </html>
+      <html
+          className="overflow-y-auto scrollbar-hide"
+          lang={locale}
+          suppressHydrationWarning
+          style={{ cursor: 'none' }} // 隐藏原生光标
+      >
+      <body className="min-h-screen">
+      <SessionProviders>
+        <NextIntlClientProvider messages={messages}>
+          <ConfigStoreProvider>
+            <ButtonStoreProvider>
+              <ThemeProvider>
+                {/* 光标组件需要放在最顶层 */}
+                <MagicCursor />
+                <ClickEffects />
+
+                {/* 主体内容保留底部空间 */}
+                <main className="pb-20">
+                  <ToasterProviders/>
+                  <ProgressBarProviders>
+                    {children}
+                  </ProgressBarProviders>
+                </main>
+
+                {/* 固定底部备案信息 */}
+                <Footer />
+              </ThemeProvider>
+            </ButtonStoreProvider>
+          </ConfigStoreProvider>
+        </NextIntlClientProvider>
+      </SessionProviders>
+      </body>
+      </html>
   );
 }
