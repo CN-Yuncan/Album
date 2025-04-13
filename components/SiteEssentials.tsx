@@ -3,7 +3,7 @@
 
 import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { useButtonStore } from '~/app/providers/button-store-providers';
 import { create } from 'zustand';
