@@ -168,15 +168,6 @@
   }
 }
 
-/* 工具类层 */
-@layer utilities {
-  /* 硬件加速优化 */
-  .gpu-accelerate {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
-  }
-
 /* 背景过渡优化 */
 .bg-cover {
   @apply transition-[background-image] duration-1000 ease-in-out;
@@ -196,6 +187,12 @@
 }
 
 @layer utilities {
+  /* 硬件加速优化 */
+  .gpu-accelerate {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
   .show-up-motion {
     animation: showUp 0.8s 0.5s backwards;
   }
