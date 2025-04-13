@@ -1,10 +1,11 @@
 // components/SiteEssentials.tsx
 'use client';
 
-import { useSpring, animated, useSprings } from '@react-spring/web';
-import { useMotionValue, useTransform } from 'framer-motion';
-import { useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react'; // 添加useState导入
+import { useSpring, animated, config, useSprings } from '@react-spring/web';
+import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { useButtonStore } from '~/app/providers/button-store-providers';
 import { create } from 'zustand';
 
 interface MouseStore {
@@ -26,9 +27,12 @@ export function DynamicBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const { resolvedTheme } = useTheme();
     const { position: [x, y], velocity, pressure } = useMouseStore();
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return; // SSR保护
+        setIsClient(true); // 标记客户端环境
+        if (typeof window === 'undefined') return;
+
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         let animationFrame: number;
@@ -86,11 +90,16 @@ export function DynamicBackground() {
         return () => cancelAnimationFrame(animationFrame);
     }, [resolvedTheme]);
 
+    if (!isClient) return null; // SSR时不渲染
     return (
         <canvas
             ref={canvasRef}
             className="fixed inset-0 z-0 opacity-30 blur-[2px]"
-            style={{ mixBlendMode: resolvedTheme === 'dark' ? 'screen' : 'multiply' }}
+            style={{
+                width: '100vw',
+                height: '100vh',
+                mixBlendMode: resolvedTheme === 'dark' ? 'screen' : 'multiply'
+            }}
         />
     );
 }
@@ -100,13 +109,8 @@ export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
     const trailCount = 8;
-
-    // 修复1：安全的初始位置
     const [isMounted, setIsMounted] = useState(false);
-    const safePos = useMemo(() => [
-        typeof window !== 'undefined' ? window.innerWidth/2 : 0,
-        typeof window !== 'undefined' ? window.innerHeight/2 : 0
-    ], []);
+    const [safePos, setSafePos] = useState([0, 0]); // 使用state延迟设置
 
     // 主光标动画
     const [{ pos }, api] = useSpring(() => ({
@@ -116,23 +120,19 @@ export function MagicCursor() {
 
     // 拖影粒子系统
     const [trailSprings, trailApi] = useSprings(trailCount, (i) => ({
-        pos: pos.get(),
+        pos: safePos,
         opacity: 1 - i/trailCount,
         scale: 1 - i/(trailCount*2),
         config: { tension: 800, friction: 30 }
     }));
 
-    // 动态参数
-    const scale = useMotionValue(1);
-    const turbulence = useMotionValue(0);
-    const energy = useTransform(turbulence, [0, 1], [0, 0.4]);
-
     useEffect(() => {
-        setIsMounted(true); // 标记组件已挂载
-        if (!cursorRef.current) return;
+        if (typeof window === 'undefined') return;
+        setIsMounted(true);
+        setSafePos([window.innerWidth/2, window.innerHeight/2]); // 客户端设置真实位置
 
-        let lastX = safePos[0];
-        let lastY = safePos[1];
+        let lastX = window.innerWidth/2;
+        let lastY = window.innerHeight/2;
         let velocity = 0;
 
         const updateStore = useMouseStore.getState().update;
@@ -169,7 +169,6 @@ export function MagicCursor() {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
-    // 修复2：只在客户端渲染
     if (!isMounted) return null;
     return (
         <>
@@ -239,8 +238,15 @@ export function ClickEffects() {
         opacity: 1,
         config: { tension: 600, friction: 20 }
     }));
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isClient) return;
+
         const handleClick = (e: MouseEvent) => {
             const newParticles = Array.from({ length: 8 }, (_, i) => ({
                 angle: (Math.PI * 2 * i) / 8 + Math.random() * 0.2,
@@ -269,8 +275,9 @@ export function ClickEffects() {
 
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, []);
+    }, [isClient]);
 
+    if (!isClient) return null;
     return (
         <>
             {springs.map((style, i) => (
