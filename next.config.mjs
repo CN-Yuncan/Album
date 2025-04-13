@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import createNextIntlPlugin from 'next-intl/plugin'
 import withBundleAnalyzer from '@next/bundle-analyzer'
 
-const __filename = fileURLToPath(import.meta.url) // 修复ESM下的路径问题
+const __filename = fileURLToPath(import.meta.url)
 
 /** @type {import('next').NextConfig} */
 const baseConfig = {
@@ -25,11 +25,8 @@ const baseConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'apir.yuncan.xyz',
-      },
-      {
-        protocol: 'https',
-        hostname: '**', // 需要Next.js 13.3+
+        hostname: '*.yuncan.xyz',
+        pathname: '/**',
       },
     ],
   },
@@ -37,20 +34,24 @@ const baseConfig = {
     config.cache = {
       type: 'filesystem',
       buildDependencies: {
-        config: [__filename], // 使用修正后的路径
+        config: [__filename],
       },
+      version: process.env.CACHE_VERSION || 'v1',
     }
     return config
   },
   experimental: {
-    esmExternals: 'loose',
-    swcFileReading: false,
+    // 保留推荐使用的优化选项
+    optimizeCss: true,
+    legacyBrowsers: false,
+    // 已移除不推荐配置
   }
 }
 
+// 插件链式调用
 const withNextIntl = createNextIntlPlugin('./i18n.ts')
-const analyzedConfig = withBundleAnalyzer({
+const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
-})(baseConfig)
+})
 
-export default withNextIntl(analyzedConfig)
+export default withNextIntl(withAnalyzer(baseConfig))

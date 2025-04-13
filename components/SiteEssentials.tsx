@@ -5,7 +5,6 @@ import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { useStore } from 'zustand';
 import { useButtonStore } from '~/app/providers/button-store-providers'
 
 // 三维粒子光标
@@ -16,7 +15,12 @@ export function MagicCursor() {
     // 主光标物理动画
     const [{ pos }, api] = useSpring(() => ({
         pos: [0, 0],
-        config: { mass: 0.8, tension: 500, friction: 25 }
+        config: {
+            mass: 0.6,  // 减小质量减少惯性
+            tension: 680,  // 增加张力提升响应速度
+            friction: 32,  // 增大摩擦力抑制震荡
+            clamp: true  // 增加边界限制
+        }
     }));
 
     // 副光标延迟动画
@@ -41,6 +45,10 @@ export function MagicCursor() {
         let lastTime = Date.now();
 
         const updateCursor = (e: MouseEvent) => {
+            // 新增：强制隐藏所有交互元素的默认光标
+            document.querySelectorAll('a, button, [role="button"]').forEach(el => {
+                (el as HTMLElement).style.cursor = 'none';
+            });
             const now = Date.now();
             const deltaTime = Math.min(100, now - lastTime) / 1000;
             const newVelocity = [
@@ -54,12 +62,17 @@ export function MagicCursor() {
             ];
 
             // 速度响应缩放
-            const speed = Math.hypot(...velocity) / 1000;
-            scale.set(Math.max(1, 1 + speed * 0.8));
-            rotateZ.set(speed * 15);
+            const normalizedSpeed = Math.min(speed, 5) / 5; // 限速5px/ms
+            const scaleValue = 1 + (Math.pow(normalizedSpeed, 0.7) * 0.6);
+            scale.set(scaleValue);
+            // 优化为带阈值限制
+            const MAX_ROTATION = 25;
+            const rotation = Math.min(speed * 12, MAX_ROTATION);
+            rotateZ.set(rotation);
 
             api.start({ pos: [e.clientX, e.clientY] });
-            setTimeout(() => trailApi.start({ pos: [e.clientX, e.clientY] }), 50);
+            const dynamicDelay = Math.max(10, 50 - speed * 8);
+            setTimeout(() => trailApi.start({ pos: [e.clientX, e.clientY] }), dynamicDelay);
 
             // 交互元素检测
             const target = e.target as HTMLElement;
@@ -69,6 +82,7 @@ export function MagicCursor() {
             lastTime = now;
         };
 
+        document.body.style.cursor = 'none';
         document.addEventListener('mousemove', updateCursor);
         return () => document.removeEventListener('mousemove', updateCursor);
     }, []);
@@ -121,7 +135,9 @@ export function DynamicBackground() {
                     mix-blend-soft-light transition-opacity duration-1000"
                 style={{
                     backgroundImage: `url(${bgUrl})`,
-                    filter: 'blur(20px) saturate(180%)'
+                    filter: 'blur(12px) saturate(140%) contrast(105%)',
+                    opacity: 25,
+                    transition: 'filter 0.5s ease-in-out' // 过渡属性
                 }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent" />
@@ -205,7 +221,7 @@ export function Footer() {
                         rel="noopener noreferrer"
                         className="hover:underline underline-offset-4 decoration-2"
                     >
-                        晋ICP备2024030642号-1
+                        晋ICP备2024030642号-1 Refactor by Yuncan   |
                     </a>
                 </p>
 

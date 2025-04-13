@@ -59,7 +59,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                     <ButtonStoreProvider>
                         <ThemeProvider>
                             <DynamicBackground /> {/* 新增背景层 */}
-                            {/* 交互元素需在主题上下文内 */}
+
                             <MagicCursor />
                             <ClickEffects />
 
