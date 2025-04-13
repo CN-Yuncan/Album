@@ -1,11 +1,9 @@
 // components/SiteEssentials.tsx
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react'; // 添加useState导入
-import { useSpring, animated, config, useSprings } from '@react-spring/web';
-import { useMotionValue, useTransform, motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react'; // 添加useState导入
+import { useSpring, animated, useSprings } from '@react-spring/web';
 import { useTheme } from 'next-themes';
-import { useButtonStore } from '~/app/providers/button-store-providers';
 import { create } from 'zustand';
 
 interface MouseStore {
