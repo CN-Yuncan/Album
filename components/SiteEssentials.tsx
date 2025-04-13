@@ -1,13 +1,12 @@
 // components/SiteEssentials.tsx
 'use client'; // 必须作为文件的第一行
 
-import { useSpring, animated, config } from '@react-spring/web';
+import { useSpring, animated } from '@react-spring/web';
 import { useMotionValue, useTransform, motion, useVelocity } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { create } from 'zustand';
 
-// 修复1：更新状态存储接口
 interface MouseStore {
     position: [number, number];
     pressure: number;
@@ -20,11 +19,14 @@ export const useMouseStore = create<MouseStore>((set) => ({
     update: (pos, pressure = 0) => set({ position: pos, pressure })
 }));
 
-// 动态流体背景
+// 修复背景组件
 export function DynamicBackground() {
     const { resolvedTheme } = useTheme();
     const { position: [x, y], pressure } = useMouseStore();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const bgUrl = resolvedTheme === 'dark'
+        ? 'https://apir.yuncan.xyz/dark.php'
+        : 'https://apir.yuncan.xyz/light.php';
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -46,8 +48,7 @@ export function DynamicBackground() {
         }));
 
         const render = () => {
-            ctx.fillStyle = resolvedTheme === 'dark' ? 'rgba(10,10,20,0.1)' : 'rgba(255,255,255,0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach(p => {
                 const dx = x - p.x;
@@ -85,40 +86,45 @@ export function DynamicBackground() {
     }, [resolvedTheme, x, y]);
 
     return (
-        <motion.canvas
-            ref={canvasRef}
-            className="fixed inset-0 z-0 opacity-50 mix-blend-soft-light"
-            style={{
-                scale: 1 + pressure * 0.2
-            }}
-        />
+        <div className="fixed inset-0 z-0">
+            {/* 添加背景图片层 */}
+            <motion.div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                    backgroundImage: `url(${bgUrl})`,
+                    opacity: 0.15,
+                    filter: 'saturate(140%) contrast(105%)'
+                }}
+            />
+            {/* 粒子画布 */}
+            <motion.canvas
+                ref={canvasRef}
+                className="absolute inset-0 opacity-50 mix-blend-soft-light"
+                style={{ scale: 1 + pressure * 0.2 }}
+            />
+        </div>
     );
 }
 
-// 量子流光光标
+// 修复光标组件
 export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
 
-    // 修复2：正确使用MotionValue跟踪位置
-    const posX = useMotionValue(0);
-    const posY = useMotionValue(0);
+    // 初始化位置为屏幕中心
+    const posX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth/2 : 0);
+    const posY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight/2 : 0);
     const vx = useVelocity(posX);
     const vy = useVelocity(posY);
 
-    // 动态参数计算
-    const scale = useTransform(() => 1 + Math.min(Math.hypot(vx.get(), vy.get()) / 500, 0.5));
+    const scale = useTransform(() => 1 + Math.min(Math.hypot(vx.get(), vy.get()) / 500, 0.6));
     const rotate = useTransform(() => Math.atan2(vy.get(), vx.get()) * 180 / Math.PI);
 
-    // 修复3：同步位置到状态存储
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            const x = e.clientX;
-            const y = e.clientY;
-
-            posX.set(x);
-            posY.set(y);
-            useMouseStore.getState().update([x, y]);
+            posX.set(e.clientX);
+            posY.set(e.clientY);
+            useMouseStore.getState().update([e.clientX, e.clientY]);
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -126,10 +132,11 @@ export function MagicCursor() {
     }, []);
 
     return (
-        <animated.div
+        <motion.div
             ref={cursorRef}
             className="pointer-events-none fixed z-50 w-6 h-6 rounded-full
-                backdrop-blur-xl border-2 border-opacity-50 transition-all"
+                backdrop-blur-xl border-2 border-opacity-50 transition-transform
+                -translate-x-1/2 -translate-y-1/2" // 添加居中偏移
             style={{
                 x: posX,
                 y: posY,
@@ -138,7 +145,9 @@ export function MagicCursor() {
                 background: theme === 'dark'
                     ? 'radial-gradient(#a0d8ff55, transparent 70%)'
                     : 'radial-gradient(#ffd70055, transparent 70%)',
-                borderColor: theme === 'dark' ? '#a0d8ff' : '#ffd700'
+                borderColor: theme === 'dark' ? '#a0d8ff' : '#ffd700',
+                left: 0,  // 确保定位基准正确
+                top: 0
             }}
         />
     );
@@ -220,10 +229,13 @@ export function Footer() {
                     transition-all duration-700 animate-gradient-rotate" />
 
                 {/* 文字优化 */}
-                <p className="text-sm font-medium
-                    bg-gradient-to-r from-blue-600 to-purple-500 dark:from-blue-400 dark:to-purple-300
-                    bg-clip-text text-transparent
-                    flex items-center">
+                <p className="text-sm font-medium flex items-center"
+                   style={{
+                       backgroundImage: 'linear-gradient(to right, #6366f1, #a855f7)',
+                       WebkitBackgroundClip: 'text',
+                       backgroundClip: 'text',
+                       color: 'transparent'
+                   }}>
                     <a
                         href="https://beian.miit.gov.cn"
                         target="_blank"
@@ -245,8 +257,8 @@ export function Footer() {
                         />
                         <defs>
                             <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#6366f1" />
-                                <stop offset="100%" stopColor="#a855f7" />
+                                <stop offset="0%" stopColor="#6366f1"/>
+                                <stop offset="100%" stopColor="#a855f7"/>
                             </linearGradient>
                         </defs>
                     </svg>
@@ -254,7 +266,7 @@ export function Footer() {
 
                 {/* 悬浮光效 */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity
-                    bg-[radial-gradient(circle_at_50%_120%,#6366f1_20%,transparent_60%)]" />
+                    bg-[radial-gradient(circle_at_50%_120%,#6366f1_20%,transparent_60%)]"/>
             </div>
         </footer>
     )
