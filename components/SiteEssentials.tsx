@@ -77,188 +77,172 @@ export function DynamicBackground() {
     );
 }
 
-// 三维粒子光标 - 美化版
+// 三维粒子光标 - 最终正确版
+// 三维粒子光标 - 最终完善版
 export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
-    const isPressed = useRef(false);
 
-    // 安全初始化主光标
-    const getInitialX = () => typeof window !== 'undefined' ? window.innerWidth/2 : 0;
-    const getInitialY = () => typeof window !== 'undefined' ? window.innerHeight/2 : 0;
+    // 状态统一管理
+    const interactionState = useRef({
+        isPressed: false,
+        lastX: typeof window !== 'undefined' ? window.innerWidth/2 : 0,
+        lastY: typeof window !== 'undefined' ? window.innerHeight/2 : 0,
+        speed: 0
+    });
 
     // 主光标动画
     const [{ x, y }, api] = useSpring(() => ({
-        x: typeof window !== 'undefined' ? window.innerWidth/2 : 0,
-        y: typeof window !== 'undefined' ? window.innerHeight/2 : 0,
+        x: interactionState.current.lastX,
+        y: interactionState.current.lastY,
         config: { mass: 0.4, tension: 800, friction: 28 }
     }));
 
-    // 正确声明拖影动画（顶层Hook调用）
-    const trail1 = useSpring({ x: x.get(), y: y.get(), config: { tension: 520, friction: 20, mass: 0.3 } });
-    const trail2 = useSpring({ x: x.get(), y: y.get(), config: { tension: 440, friction: 20, mass: 0.3 } });
-    const trail3 = useSpring({ x: x.get(), y: y.get(), config: { tension: 360, friction: 20, mass: 0.3 } });
-    const trail4 = useSpring({ x: x.get(), y: y.get(), config: { tension: 280, friction: 20, mass: 0.3 } });
-    const trail5 = useSpring({ x: x.get(), y: y.get(), config: { tension: 200, friction: 20, mass: 0.3 } });
+    // 拖影系统
+    const trails = Array.from({ length: 5 }).map((_, i) => {
+        const [style, api] = useSpring(() => ({
+            x: interactionState.current.lastX,
+            y: interactionState.current.lastY,
+            config: { tension: 600 - i * 80, friction: 20, mass: 0.3 }
+        }));
+        return { style, api, delay: i * 15 };
+    });
 
-    // 拖影集合
-    const trails = [
-        { style: trail1, delay: 15 },
-        { style: trail2, delay: 30 },
-        { style: trail3, delay: 45 },
-        { style: trail4, delay: 60 },
-        { style: trail5, delay: 75 }
-    ];
-
-
-    // 动态参数
-    const scale = useMotionValue(1);
+    // 动画参数
     const rotateZ = useMotionValue(0);
+    const { scale } = useSpring({
+        scale: interactionState.current.isPressed ? 0.7 : 1,
+        config: { tension: 600, friction: 20 }
+    });
 
-    // 新增：动态渐变颜色
+    // 颜色配置系统
+    const colorConfig = {
+        dark: { primary: 260, secondary: 180, saturation: '100%', lightness: '60%' },
+        light: { primary: 180, secondary: 300, saturation: '90%', lightness: '50%' }
+    };
+
+    // 动态颜色生成器
+    const getColor = (hueOffset: number, alpha: number) => {
+        const config = theme === 'dark' ? colorConfig.dark : colorConfig.light;
+        const baseHue = interactionState.current.isPressed ? config.primary + 20 : config.primary;
+        return `hsla(
+            ${(baseHue + hueOffset) % 360},
+            ${config.saturation},
+            ${interactionState.current.isPressed ? '70%' : config.lightness},
+            ${alpha}
+        )`;
+    };
+
+    // 动态渐变
     const gradient = useTransform(
         [scale, rotateZ],
         ([s, r]) => `conic-gradient(
             from ${r}deg,
-            hsl(${s * 180} 100% 60%),
-            hsl(${s * 240} 100% 50%),
-            hsl(${s * 300} 100% 60%)
+            ${getColor(0, 0.8)},
+            ${getColor(60, 0.6)},
+            ${getColor(120, 0.4)}
         )`
     );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        let animationFrameId: number;
-        let lastX = window.innerWidth/2;
-        let lastY = window.innerHeight/2;
-        let lastTime = Date.now();
-
-        // 窗口尺寸安全获取
-        const getSafePosition = (e: MouseEvent) => {
-            const safeX = Math.min(
-                Math.max(e.clientX, 0),
-                window.innerWidth
-            );
-            const safeY = Math.min(
-                Math.max(e.clientY, 0),
-                window.innerHeight
-            );
-            return [safeX, safeY];
-        };
-
-        const updateStore = useMouseStore.getState().update;
-        const handleMouseMove = (e: MouseEvent) => {
-            const [currentX, currentY] = getSafePosition(e);
-            const now = Date.now();
-
-            // 计算速度
-            const deltaTime = (now - lastTime) || 1;
-            const velocityX = (currentX - lastX) / deltaTime;
-            const velocityY = (currentY - lastY) / deltaTime;
-            const speed = Math.hypot(velocityX, velocityY);
-
-            // 初始化所有光标位置
-            const initX = window.innerWidth/2;
-            const initY = window.innerHeight/2;
-
-            // 更新主光标
-            api.start({ x: currentX, y: currentY });
-
-            // 初始化拖影（修复处）
-            trails.forEach(({ api: trailApi }) => {
-                trailApi.start({
-                    x: initX,
-                    y: initY,
-                    config: { friction: 20, mass: 0.3 }
-                });
-            });
-
-            // 动态缩放和旋转
-            scale.set(1 + Math.min(speed * 0.02, 0.6));
-            rotateZ.set(Math.min(speed * 0.2, 25));
-
-            // 交互状态检测
-            const target = e.target as HTMLElement;
-            const isInteractive = target?.closest('a, button, [role="button"]');
-            cursorRef.current?.style.setProperty('--glow-scale', isInteractive ? '1.8' : '1');
-
-            // 更新坐标缓存
-            lastX = currentX;
-            lastY = currentY;
-            lastTime = now;
-
-
-
-            // 隐藏原生光标
-            document.body.style.cursor = 'none';
-            document.querySelectorAll('button, a').forEach(el => {
-                (el as HTMLElement).style.cursor = 'none';
-            });
-            // 新增：更新全局鼠标状态
-            updateStore([currentX, currentY], speed);
-        };
-
-        // 新增：鼠标按下/抬起监听
-        const handleMouseDown = () => {
-            isPressed.current = true;
-            scale.set(0.6);
-        };
-        const handleMouseUp = () => {
-            isPressed.current = false;
-            scale.set(1 + Math.min(speed * 0.02, 0.6));
-        };
-
-        window.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('mouseup', handleMouseUp);
-
-        // 窗口大小变化处理
-        const handleResize = () => {
+        // 初始化函数
+        const initPosition = () => {
             const centerX = window.innerWidth/2;
             const centerY = window.innerHeight/2;
 
             api.start({ x: centerX, y: centerY });
-            trailRefs.current.forEach(trailApi => {
-                trailApi.start({ x: centerX, y: centerY });
+            trails.forEach(({ api }) => {
+                api.start({ x: centerX, y: centerY, immediate: true });
             });
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('resize', handleResize);
+        // 鼠标移动处理
+        const handleMouseMove = (e: MouseEvent) => {
+            const currentX = Math.min(Math.max(e.clientX, 0), window.innerWidth);
+            const currentY = Math.min(Math.max(e.clientY, 0), window.innerHeight);
+            const now = Date.now();
 
-        // 初始化位置
-        api.start({ pos: [lastX, lastY] });
-        trailApi.start({ pos: [lastX, lastY] });
+            // 计算速度
+            const deltaTime = now - interactionState.current.lastTime || 1;
+            const velocityX = (currentX - interactionState.current.lastX) / deltaTime;
+            const velocityY = (currentY - interactionState.current.lastY) / deltaTime;
+            interactionState.current.speed = Math.hypot(velocityX, velocityY);
+            interactionState.current.lastTime = now;
+
+            // 更新主光标
+            api.start({ x: currentX, y: currentY });
+
+            // 更新拖影系统
+            trails.forEach(({ api }, i) => {
+                api.start({
+                    x: currentX,
+                    y: currentY,
+                    delay: i * 15,
+                    config: { tension: 600 - i * 80 }
+                });
+            });
+
+            // 更新旋转和缩放
+            rotateZ.set(Math.min(interactionState.current.speed * 0.2, 25));
+        };
+
+        // 交互事件处理
+        const handleMouseDown = () => {
+            interactionState.current.isPressed = true;
+            scale.start(0.7);
+            cursorRef.current?.style.setProperty('--glow-intensity', '1.8');
+        };
+
+        const handleMouseUp = () => {
+            interactionState.current.isPressed = false;
+            scale.start(1);
+            cursorRef.current?.style.setProperty('--glow-intensity', '1');
+        };
+
+        // 窗口resize处理
+        const handleResize = () => {
+            interactionState.current.lastX = window.innerWidth/2;
+            interactionState.current.lastY = window.innerHeight/2;
+            initPosition();
+        };
+
+        // 初始化
+        initPosition();
+        const eventListeners = [
+            { event: 'mousemove', handler: handleMouseMove },
+            { event: 'resize', handler: handleResize },
+            { event: 'mousedown', handler: handleMouseDown },
+            { event: 'mouseup', handler: handleMouseUp }
+        ];
+
+        eventListeners.forEach(({ event, handler }) =>
+            window.addEventListener(event, handler)
+        );
 
         return () => {
-            window.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('resize', handleResize);
-            cancelAnimationFrame(animationFrameId);
-            document.body.style.cursor = 'default';
+            eventListeners.forEach(({ event, handler }) =>
+                window.removeEventListener(event, handler)
+            );
         };
-    }, [api]);
+    }, [api, scale]);
 
     return (
         <>
-            {/* 主光标 - 改为液态效果 */}
+            {/* 主光标 */}
             <animated.div
                 ref={cursorRef}
                 className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-1/2
-                    w-12 h-8 rounded-[40%] border-2 backdrop-blur-2xl
-                    transition-all duration-300 ease-out"
+                    w-14 h-14 backdrop-blur-xl transition-all duration-300 ease-out"
                 style={{
                     x,
                     y,
                     scale,
                     rotateZ,
                     backgroundImage: gradient,
-                    borderColor: theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)',
-                    boxShadow: theme === 'dark'
-                        ? '0 0 30px 10px hsl(240 100% 60% / 0.4)'
-                        : '0 0 30px 8px hsl(180 100% 60% / 0.3)',
-                    filter: 'saturate(180%)',
+                    clipPath: 'polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%)',
+                    filter: 'saturate(var(--glow-intensity, 1))',
                     transform: `
                         translate(-50%, -50%)
                         scale(${scale.get()})
@@ -266,24 +250,32 @@ export function MagicCursor() {
                     `
                 }}
             >
-                {/* 新增：核心光点 */}
-                <div className="absolute inset-0 bg-white/30 blur-[2px] rounded-full" />
+                {/* 核心光效 */}
+                <div className="absolute inset-0 animate-pulse" style={{
+                    background: `radial-gradient(
+                        circle at 50% 50%,
+                        ${getColor(0, 0.4)},
+                        transparent 70%
+                    )`,
+                    mixBlendMode: 'screen'
+                }} />
             </animated.div>
 
-            {/* 粒子拖影系统 */}
-            {trails.map((trail, index) => (
+            {/* 拖影系统 */}
+            {trails.map(({ style }, i) => (
                 <animated.div
-                    key={`trail-${index}`}
+                    key={`trail-${i}`}
                     className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
-                        w-6 h-4 rounded-[30%] backdrop-blur-sm"
+                        w-8 h-8 backdrop-blur-md"
                     style={{
-                        ...trail.style,
-                        opacity: 0.8 - index * 0.15,
-                        scale: 0.7 - index * 0.1,
-                        backgroundImage: `conic-gradient(
-                            from ${rotateZ.get()}deg,
-                            hsl(${200 + index * 40} 100% 60% / 0.6),
-                            hsl(${240 + index * 40} 100% 50% / 0.5)
+                        ...style,
+                        opacity: 0.8 - i * 0.15,
+                        scale: 0.7 - i * 0.1,
+                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                        background: `linear-gradient(
+                            ${45 + rotateZ.get()}deg,
+                            ${getColor(i * 20, 0.6)},
+                            ${getColor(i * 40, 0.4)}
                         )`
                     }}
                 />
@@ -296,38 +288,74 @@ export function MagicCursor() {
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
     const lastClickTime = useRef(0);
-    const activeType = useButtonStore((state) => state.activeType)
-    const setActiveType = useButtonStore((state) => state.setActiveType)
+    const activeType = useButtonStore((state) => state.activeType);
+    const cursorRef = useRef<HTMLDivElement>(null);
 
-    const [{ scale, opacity }, api] = useSpring(() => ({
-        scale: 0,
-        opacity: 0,
-        config: { tension: 600, friction: 30 }
-    }));
+    // 多层涟漪系统
+    const effects = Array.from({ length: 3 }).map((_, i) =>
+        useSpring(() => ({
+            scale: 0,
+            opacity: 0,
+            rotate: 0,
+            config: {
+                tension: 600 + i * 200,
+                friction: 20 - i * 3
+            }
+        }))
+    );
+
+    // 动态颜色生成
+    const getEffectColor = (index: number) => {
+        const baseHue = resolvedTheme === 'dark' ? 260 : 180;
+        return `hsla(
+            ${(baseHue + index * 40) % 360},
+            80%,
+            ${resolvedTheme === 'dark' ? '60%' : '50%'},
+            ${0.3 - index * 0.1}
+        )`;
+    };
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            // 节流处理
             if (Date.now() - lastClickTime.current < 100) return;
             lastClickTime.current = Date.now();
 
-            // 根据按钮类型变化效果
-            const intensity = activeType === 'important' ? 2 : 1;
+            const intensity = activeType === 'important' ? 1.5 : 1;
+            const target = e.target as HTMLElement;
+            const rect = target.getBoundingClientRect();
+            const centerX = rect.left + rect.width/2;
+            const centerY = rect.top + rect.height/2;
 
-            api.start({
-                from: {
-                    scale: 0.5 * intensity,
-                    opacity: 0.8 / intensity
-                },
-                to: {
-                    scale: 3 * intensity,
-                    opacity: 0
-                },
-                config: {
-                    tension: 500 * intensity,
-                    friction: 20 / intensity
-                }
+            effects.forEach(([styles, api], i) => {
+                api.start({
+                    from: {
+                        scale: (0.8 + i * 0.2) * intensity,
+                        opacity: 0.6 - i * 0.2,
+                        rotate: Math.random() * 360
+                    },
+                    to: {
+                        scale: (3 + i) * intensity,
+                        opacity: 0,
+                        rotate: styles.rotate.get() + 180
+                    },
+                    delay: i * 30,
+                    config: {
+                        tension: 500 * intensity + i * 100,
+                        friction: 20 / intensity - i * 2
+                    }
+                });
             });
+
+            // 粒子爆破效果
+            if (cursorRef.current) {
+                cursorRef.current.animate([
+                    { transform: 'scale(1)', opacity: 1 },
+                    { transform: 'scale(1.8)', opacity: 0 }
+                ], {
+                    duration: 300,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+            }
         };
 
         document.addEventListener('click', handleClick);
@@ -335,18 +363,38 @@ export function ClickEffects() {
     }, [activeType]);
 
     return (
-        <animated.div
-            className="fixed -translate-x-1/2 -translate-y-1/2 pointer-events-none
-                w-16 h-16 rounded-full mix-blend-screen"
-            style={{
-                scale,
-                opacity,
-                backgroundColor: resolvedTheme === 'dark'
-                    ? 'rgba(255,255,255,0.15)'
-                    : 'rgba(0,0,0,0.1)',
-                transform: 'translate(-50%, -50%)'
-            }}
-        />
+        <>
+            {/* 多层涟漪 */}
+            {effects.map(([styles], i) => (
+                <animated.div
+                    key={`ripple-${i}`}
+                    className="fixed -translate-x-1/2 -translate-y-1/2 pointer-events-none
+                        w-24 h-24 rounded-full mix-blend-screen blur-[2px]"
+                    style={{
+                        scale: styles.scale,
+                        opacity: styles.opacity,
+                        backgroundColor: getEffectColor(i),
+                        transform: `
+                            translate(-50%, -50%)
+                            scale(${styles.scale})
+                            rotate(${styles.rotate}deg)
+                        `
+                    }}
+                />
+            ))}
+
+            {/* 粒子效果 */}
+            <div
+                ref={cursorRef}
+                className="fixed -translate-x-1/2 -translate-y-1/2 pointer-events-none
+                    w-4 h-4 rounded-full blur-[1px]"
+                style={{
+                    background: resolvedTheme === 'dark'
+                        ? 'radial-gradient(circle, #7B61FF 0%, #00C4FF 100%)'
+                        : 'radial-gradient(circle, #00FF87 0%, #FFEB3B 100%)'
+                }}
+            />
+        </>
     );
 }
 
