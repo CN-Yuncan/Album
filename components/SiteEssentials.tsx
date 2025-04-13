@@ -1,30 +1,31 @@
 // components/SiteEssentials.tsx
 'use client'; // 必须作为文件的第一行
 
-import { useSpring, animated, config, useChain } from '@react-spring/web';
+'use client'; // 必须添加在文件最顶部
+
+import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion, useVelocity } from 'framer-motion';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { create } from 'zustand';
 
+// 修复1：更新状态存储接口
 interface MouseStore {
     position: [number, number];
-    velocity: number;
     pressure: number;
-    update: (pos: [number, number], vel: number, pressure?: number) => void;
+    update: (pos: [number, number], pressure?: number) => void;
 }
 
 export const useMouseStore = create<MouseStore>((set) => ({
     position: [0, 0],
-    velocity: 0,
     pressure: 0,
-    update: (pos, vel, pressure = 0) => set({ position: pos, velocity: vel, pressure })
+    update: (pos, pressure = 0) => set({ position: pos, pressure })
 }));
 
 // 动态流体背景
 export function DynamicBackground() {
     const { resolvedTheme } = useTheme();
-    const { position: [x, y], velocity, pressure } = useMouseStore();
+    const { position: [x, y], pressure } = useMouseStore();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -51,7 +52,6 @@ export function DynamicBackground() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach(p => {
-                // 粒子向光标方向流动
                 const dx = x - p.x;
                 const dy = y - p.y;
                 const dist = Math.hypot(dx, dy);
@@ -60,20 +60,17 @@ export function DynamicBackground() {
                 p.vx += (dx / dist) * force * 0.01 + (Math.random() - 0.5) * 0.2;
                 p.vy += (dy / dist) * force * 0.01 + (Math.random() - 0.5) * 0.2;
 
-                // 速度衰减
                 p.vx *= 0.95;
                 p.vy *= 0.95;
 
-                p.x += p.vx + velocity * 0.01;
-                p.y += p.vy + velocity * 0.01;
+                p.x += p.vx;
+                p.y += p.vy;
 
-                // 边界循环
                 if (p.x < 0) p.x += canvas.width;
                 if (p.x > canvas.width) p.x -= canvas.width;
                 if (p.y < 0) p.y += canvas.height;
                 if (p.y > canvas.height) p.y -= canvas.height;
 
-                // 绘制粒子
                 ctx.beginPath();
                 ctx.fillStyle = resolvedTheme === 'dark'
                     ? `hsla(220, 50%, 70%, ${p.life})`
@@ -87,7 +84,7 @@ export function DynamicBackground() {
 
         render();
         return () => cancelAnimationFrame(frame);
-    }, [resolvedTheme, x, y, velocity]);
+    }, [resolvedTheme, x, y]);
 
     return (
         <motion.canvas
@@ -104,93 +101,55 @@ export function DynamicBackground() {
 export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
-    const trailRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-    const { position: [x, y], velocity } = useMouseStore();
-    const vx = useVelocity(x);
-    const vy = useVelocity(y);
+    // 修复2：正确使用MotionValue跟踪位置
+    const posX = useMotionValue(0);
+    const posY = useMotionValue(0);
+    const vx = useVelocity(posX);
+    const vy = useVelocity(posY);
 
-    // 主光标动画
-    const [{ pos }, api] = useSpring(() => ({
-        pos: [x, y],
-        config: { mass: 0.4, tension: 1200, friction: 25 }
-    }));
-
-    // 动态参数
-    const scale = useTransform(() => 1 + Math.min(velocity / 500, 0.6));
+    // 动态参数计算
+    const scale = useTransform(() => 1 + Math.min(Math.hypot(vx.get(), vy.get()) / 500);
     const rotate = useTransform(() => Math.atan2(vy.get(), vx.get()) * 180 / Math.PI);
-    const gradient = useTransform(
-        [scale, rotate],
-        ([s, r]) => `linear-gradient(${r}deg, 
-            ${theme === 'dark' ? '#a0d8ff55' : '#ffd70055'} 0%,
-            ${theme === 'dark' ? '#6a8fff88' : '#ff8c0088'} ${s * 25}%,
-            ${theme === 'dark' ? '#3a0ca355' : '#ff450055'} 100%)`
-    );
 
+    // 修复3：同步位置到状态存储
     useEffect(() => {
-        api.start({ pos: [x, y] });
+        const handleMouseMove = (e: MouseEvent) => {
+            const x = e.clientX;
+            const y = e.clientY;
 
-        // 拖影效果
-        trailRefs.current.forEach((trail, i) => {
-            const delay = i * 0.015;
-            setTimeout(() => {
-                if (trail) {
-                    trail.style.transform = `translate(${x - 12}px, ${y - 12}px)`;
-                    trail.style.opacity = `${1 - i * 0.2}`;
-                }
-            }, delay * 1000);
-        });
+            posX.set(x);
+            posY.set(y);
+            useMouseStore.getState().update([x, y]);
+        };
 
-        // 交互元素检测
-        const target = document.elementFromPoint(x, y);
-        const isInteractive = target?.closest('a, button, [role="button"]');
-        if (cursorRef.current) {
-            cursorRef.current.style.boxShadow = isInteractive
-                ? `0 0 30px ${theme === 'dark' ? '#a0d8ff' : '#ffd700'}`
-                : 'none';
-        }
-    }, [x, y]);
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
 
     return (
-        <>
-            {/* 主光标 */}
-            <animated.div
-                ref={cursorRef}
-                className="pointer-events-none fixed z-50 w-6 h-6 rounded-full
-                    backdrop-blur-xl border-2 border-opacity-50 transition-all"
-                style={{
-                    x: pos.to(x => x - 12),
-                    y: pos.to(y => y - 12),
-                    scale,
-                    rotate,
-                    background: gradient,
-                    borderColor: gradient
-                }}
-            />
-
-            {/* 流体拖影 */}
-            {[...Array(5)].map((_, i) => (
-                <div
-                    key={i}
-                    ref={el => trailRefs.current[i] = el}
-                    className="pointer-events-none fixed w-6 h-6 rounded-full
-                        backdrop-blur-sm transition-all duration-300"
-                    style={{
-                        background: theme === 'dark'
-                            ? 'radial-gradient(#a0d8ff33, transparent 70%)'
-                            : 'radial-gradient(#ffd70033, transparent 70%)',
-                        opacity: 0
-                    }}
-                />
-            ))}
-        </>
+        <animated.div
+            ref={cursorRef}
+            className="pointer-events-none fixed z-50 w-6 h-6 rounded-full
+                backdrop-blur-xl border-2 border-opacity-50 transition-all"
+            style={{
+                x: posX,
+                y: posY,
+                scale,
+                rotate,
+                background: theme === 'dark'
+                    ? 'radial-gradient(#a0d8ff55, transparent 70%)'
+                    : 'radial-gradient(#ffd70055, transparent 70%)',
+                borderColor: theme === 'dark' ? '#a0d8ff' : '#ffd700'
+            }}
+        />
     );
 }
 
 // 全息涟漪效果
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
-    const { position: [x, y], pressure } = useMouseStore();
+    const { position: [x, y] } = useMouseStore();
     const circles = useRef<HTMLDivElement[]>([]);
 
     const createRipple = () => {
@@ -206,7 +165,7 @@ export function ClickEffects() {
             { transform: 'scale(0)', opacity: 1 },
             { transform: 'scale(2)', opacity: 0 }
         ], {
-            duration: 800 * (1 + pressure),
+            duration: 800,
             easing: 'cubic-bezier(0.23, 1, 0.32, 1)'
         });
 
@@ -215,9 +174,9 @@ export function ClickEffects() {
         };
     };
 
+    // 修复4：更新点击事件处理
     useEffect(() => {
         const handleClick = () => {
-            useMouseStore.getState().update([0,0], 0, Math.random());
             createRipple();
         };
         document.addEventListener('click', handleClick);
