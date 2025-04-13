@@ -4,27 +4,7 @@ import Gallery from '~/components/album/gallery'
 import { fetchConfigsByKeys } from '~/server/db/query/configs'
 import AlbumGallery from '~/components/album/album-gallery'
 import 'react-photo-album/masonry.css'
-import dynamic from 'next/dynamic';
-
-const DynamicCursor = dynamic(
-    () => import('@/components/cursor').then((mod) => ({
-      default: () => (
-          <>
-            {mod.DynamicBackground && <mod.DynamicBackground />}
-            {mod.MagicCursor && <mod.MagicCursor />}
-            {mod.ClickEffects && <mod.ClickEffects />}
-          </>
-      )
-    })),
-    {
-      ssr: false,
-      loading: () => (
-          <div className="pointer-events-none">
-            <div className="fixed inset-0 bg-background" />
-          </div>
-      )
-    }
-);
+import CursorWrapper from '@/components/CursorWrapper'
 
 export default async function Home() {
   const getData = async (pageNum: number, album: string) => {
@@ -65,10 +45,10 @@ export default async function Home() {
 
   return (
     <>
-      <DynamicCursor />
       {currentStyle && currentStyle === '1' ?
         <Gallery {...props} /> : <AlbumGallery {...props} />
       }
+      <CursorWrapper />
     </>
   )
 }
