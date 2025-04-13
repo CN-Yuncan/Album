@@ -1,8 +1,6 @@
 // components/SiteEssentials.tsx
 'use client'; // 必须作为文件的第一行
 
-'use client'; // 必须添加在文件最顶部
-
 import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion, useVelocity } from 'framer-motion';
 import { useEffect, useRef } from 'react';
@@ -109,7 +107,7 @@ export function MagicCursor() {
     const vy = useVelocity(posY);
 
     // 动态参数计算
-    const scale = useTransform(() => 1 + Math.min(Math.hypot(vx.get(), vy.get()) / 500);
+    const scale = useTransform(() => 1 + Math.min(Math.hypot(vx.get(), vy.get()) / 500, 0.5));
     const rotate = useTransform(() => Math.atan2(vy.get(), vx.get()) * 180 / Math.PI);
 
     // 修复3：同步位置到状态存储
