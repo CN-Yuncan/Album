@@ -89,29 +89,26 @@ export function MagicCursor() {
 
     // 主光标动画
     const [{ x, y }, api] = useSpring(() => ({
-        x: getInitialX(),
-        y: getInitialY(),
+        x: typeof window !== 'undefined' ? window.innerWidth/2 : 0,
+        y: typeof window !== 'undefined' ? window.innerHeight/2 : 0,
         config: { mass: 0.4, tension: 800, friction: 28 }
     }));
 
-    // 正确声明拖影系统（使用useMemo保持引用稳定）
-    const trailCount = 5;
-    const trails = useMemo(() =>
-            Array.from({ length: trailCount }).map((_, i) =>
-                useSpring({
-                    x: getInitialX(),
-                    y: getInitialY(),
-                    opacity: 0.8 - i * 0.15,
-                    scale: 0.7 - i * 0.1,
-                    config: {
-                        tension: 600 - i * 80,
-                        friction: 20,
-                        mass: 0.3,
-                        delay: i * 15
-                    }
-                })
-            ),
-        []); // 空依赖确保只创建一次
+    // 正确声明拖影动画（顶层Hook调用）
+    const trail1 = useSpring({ x: x.get(), y: y.get(), config: { tension: 520, friction: 20, mass: 0.3 } });
+    const trail2 = useSpring({ x: x.get(), y: y.get(), config: { tension: 440, friction: 20, mass: 0.3 } });
+    const trail3 = useSpring({ x: x.get(), y: y.get(), config: { tension: 360, friction: 20, mass: 0.3 } });
+    const trail4 = useSpring({ x: x.get(), y: y.get(), config: { tension: 280, friction: 20, mass: 0.3 } });
+    const trail5 = useSpring({ x: x.get(), y: y.get(), config: { tension: 200, friction: 20, mass: 0.3 } });
+
+    // 拖影集合
+    const trails = [
+        { style: trail1, delay: 15 },
+        { style: trail2, delay: 30 },
+        { style: trail3, delay: 45 },
+        { style: trail4, delay: 60 },
+        { style: trail5, delay: 75 }
+    ];
 
 
     // 动态参数
@@ -165,11 +162,11 @@ export function MagicCursor() {
             api.start({ x: currentX, y: currentY });
 
             // 更新所有拖影
-            trails.forEach((trailApi, index) => {
-                trailApi.start({
+            trails.forEach((trail, index) => {
+                trail.style.start({
                     x: currentX,
                     y: currentY,
-                    delay: index * 15
+                    delay: trail.delay
                 });
             });
 
@@ -276,10 +273,9 @@ export function MagicCursor() {
                     className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
                         w-6 h-4 rounded-[30%] backdrop-blur-sm"
                     style={{
-                        x: trail.x,
-                        y: trail.y,
-                        opacity: trail.opacity,
-                        scale: trail.scale,
+                        ...trail.style,
+                        opacity: 0.8 - index * 0.15,
+                        scale: 0.7 - index * 0.1,
                         backgroundImage: `conic-gradient(
                             from ${rotateZ.get()}deg,
                             hsl(${200 + index * 40} 100% 60% / 0.6),
