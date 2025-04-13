@@ -158,15 +158,19 @@ export function MagicCursor() {
             const velocityY = (currentY - lastY) / deltaTime;
             const speed = Math.hypot(velocityX, velocityY);
 
+            // 初始化所有光标位置
+            const initX = window.innerWidth/2;
+            const initY = window.innerHeight/2;
+
             // 更新主光标
             api.start({ x: currentX, y: currentY });
 
-            // 更新所有拖影
-            trails.forEach((trail, index) => {
-                trail.style.start({
-                    x: currentX,
-                    y: currentY,
-                    delay: trail.delay
+            // 初始化拖影（修复处）
+            trails.forEach(({ api: trailApi }) => {
+                trailApi.start({
+                    x: initX,
+                    y: initY,
+                    config: { friction: 20, mass: 0.3 }
                 });
             });
 
@@ -234,7 +238,7 @@ export function MagicCursor() {
             cancelAnimationFrame(animationFrameId);
             document.body.style.cursor = 'default';
         };
-    }, []);
+    }, [api]);
 
     return (
         <>
