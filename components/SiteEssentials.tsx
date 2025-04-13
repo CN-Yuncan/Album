@@ -74,8 +74,9 @@ export function MagicCursor() {
     const cursorRef = useRef<HTMLDivElement>(null);
 
     // 主光标动画
-    const [{ pos }, api] = useSpring(() => ({
-        pos: [window.innerWidth/2, window.innerHeight/2],
+    const [{ x, y }, api] = useSpring(() => ({
+        x: window.innerWidth/2,
+        y: window.innerHeight/2,
         config: {
             mass: 0.6,
             tension: 680,
@@ -86,8 +87,9 @@ export function MagicCursor() {
     }));
 
     // 拖影动画
-    const [{ pos: trailPos }, trailApi] = useSpring(() => ({
-        pos: [window.innerWidth/2, window.innerHeight/2],
+    const [{ x: trailX, y: trailY }, trailApi] = useSpring(() => ({
+        x: window.innerWidth/2,
+        y: window.innerHeight/2,
         config: { ...config.stiff, precision: 0.1 }
     }));
 
@@ -121,9 +123,16 @@ export function MagicCursor() {
             const velocityY = (currentY - lastY) / deltaTime;
             const speed = Math.hypot(velocityX, velocityY);
 
-            // 更新动画
-            api.start({ pos: [currentX, currentY] });
-            trailApi.start({ pos: [currentX, currentY] });
+            // 更新动画时使用独立坐标属性
+            api.start({
+                x: currentX,
+                y: currentY
+            });
+            trailApi.start({
+                x: currentX,
+                y: currentY,
+                delay: 50  // 添加延迟增强拖影效果
+            });
 
             // 动态缩放和旋转
             scale.set(1 + Math.min(speed * 0.02, 0.6));
@@ -178,8 +187,8 @@ export function MagicCursor() {
                     w-8 h-8 rounded-full backdrop-blur-lg border
                     shadow-[0_0_30px_10px_var(--glow-color)]"
                 style={{
-                    x: pos.to(x => x),
-                    y: pos.to(y => y),
+                    x,
+                    y,  // 直接使用独立动画值
                     scale,
                     rotateZ,
                     backgroundColor,
@@ -194,8 +203,8 @@ export function MagicCursor() {
                 className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
                     w-6 h-6 rounded-full bg-current opacity-20"
                 style={{
-                    x: trailPos.to(x => x),
-                    y: trailPos.to(y => y),
+                    x: trailX,
+                    y: trailY,  // 使用独立拖影坐标
                     scale: 0.8
                 }}
             />
