@@ -4,7 +4,7 @@
 import dynamic from 'next/dynamic';
 
 const DynamicCursor = dynamic(
-    () => import('@/components/SiteEssentials').then((mod) => ({
+    () => import('~/components/SiteEssentials').then((mod) => ({
         default: () => (
             <>
                 {mod.DynamicBackground && <mod.DynamicBackground />}
