@@ -104,18 +104,24 @@ export function MagicCursor() {
 
     // 新增：粒子拖影数组
     const trailCount = 5;
-    const trails = Array.from({ length: trailCount }).map((_, i) =>
-        useSpring(() => ({
-            x: getInitialPosition('Width'),
-            y: getInitialPosition('Height'),
-            config: {
-                tension: 600 - i * 80,
-                friction: 20,
-                mass: 0.3,
-                delay: i * 15
-            }
-        }))
-    );
+    const trailRefs = useRef<ReturnType<typeof useSpring>[]>([]);
+
+    useEffect(() => {
+        // 初始化拖影系统
+        trailRefs.current = Array.from({ length: trailCount }).map((_, i) =>
+            useSpring({
+                x: getInitialPosition('Width'),
+                y: getInitialPosition('Height'),
+                config: {
+                    tension: 600 - i * 80,
+                    friction: 20,
+                    mass: 0.3,
+                    delay: i * 15
+                }
+            })
+        );
+    }, []);
+
 
     // 动态参数
     const scale = useMotionValue(1);
@@ -164,15 +170,16 @@ export function MagicCursor() {
             const velocityY = (currentY - lastY) / deltaTime;
             const speed = Math.hypot(velocityX, velocityY);
 
-            // 更新动画时使用独立坐标属性
-            api.start({
-                x: currentX,
-                y: currentY
-            });
-            trailApi.start({
-                x: currentX,
-                y: currentY,
-                delay: 50  // 添加延迟增强拖影效果
+            // 更新主光标
+            api.start({ x: currentX, y: currentY });
+
+            // 更新所有拖影
+            trailRefs.current.forEach((trailApi, i) => {
+                trailApi.start({
+                    x: currentX,
+                    y: currentY,
+                    delay: i * 15
+                });
             });
 
             // 动态缩放和旋转
@@ -215,8 +222,13 @@ export function MagicCursor() {
 
         // 窗口大小变化处理
         const handleResize = () => {
-            api.set({ pos: [lastX, lastY] });
-            trailApi.set({ pos: [lastX, lastY] });
+            const centerX = window.innerWidth/2;
+            const centerY = window.innerHeight/2;
+
+            api.start({ x: centerX, y: centerY });
+            trailRefs.current.forEach(trailApi => {
+                trailApi.start({ x: centerX, y: centerY });
+            });
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -267,14 +279,13 @@ export function MagicCursor() {
             </animated.div>
 
             {/* 粒子拖影系统 */}
-            {trails.map((trail, i) => (
+            {trailRefs.current.map(([trailStyles], i) => (
                 <animated.div
                     key={i}
                     className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
                         w-6 h-4 rounded-[30%] backdrop-blur-sm"
                     style={{
-                        x: trail.x,
-                        y: trail.y,
+                        ...trailStyles,
                         opacity: 0.8 - i * 0.15,
                         scale: 0.7 - i * 0.1,
                         backgroundImage: `conic-gradient(
