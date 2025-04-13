@@ -39,4 +39,17 @@ if (process.env.ANALYZE === 'true') {
   })(nextConfig)
 }
 
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'apir.yuncan.xyz',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+}
+
 export default withNextIntl(nextConfig);

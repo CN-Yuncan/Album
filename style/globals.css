@@ -1,7 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -44,73 +41,13 @@
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
+  /* 主题关联动画 */
   @keyframes accordion-down {
     from {
       height: 0;
     }
     to {
       height: var(--radix-accordion-content-height);
-    }
-  }
-
-  /* 核心动画定义 */
-  @keyframes smooth-appear {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  /* 平滑滚动支持 */
-  @supports (scroll-behavior: smooth) {
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 4rem; /* 为固定头部预留空间 */
-    }
-  }
-
-  /* 移动端交互优化 */
-  @media (pointer: coarse) {
-    html {
-      cursor: default !important;
-    }
-
-    [data-cursor] {
-      display: none !important;
-    }
-
-    button, a {
-      touch-action: manipulation; /* 提升移动端点击响应 */
-    }
-  }
-
-  /* global.css 新增样式 */
-  @layer utilities {
-    /* 硬件加速优化 */
-    .gpu-accelerate {
-      transform: translateZ(0);
-      backface-visibility: hidden;
-      perspective: 1000px;
-    }
-
-    /* 光标光晕动画 */
-    .shadow-glow {
-      animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { filter: drop-shadow(0 0 10px rgba(100, 100, 255, 0.3)); }
-      50% { filter: drop-shadow(0 0 15px rgba(100, 100, 255, 0.5)); }
-    }
-  }
-
-  /* 背景过渡优化 */
-  .bg-cover {
-    @apply transition-[background-image] duration-1000 ease-in-out;
-  }
-
-  /* 移动端优化增强 */
-  @media (pointer: coarse) {
-    .interactive-tap {
-      @apply active:scale-95 transition-transform;
     }
   }
 
@@ -122,19 +59,26 @@
       height: 0;
     }
   }
+}
 
-  @keyframes showUp {
-    from {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+/* 全局动画 */
+@keyframes showUp {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
+@keyframes smooth-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 暗黑模式变量 */
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -204,13 +148,62 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* 响应式优化 */
+@supports (scroll-behavior: smooth) {
+  html { scroll-behavior: smooth; }
+}
+
+/* 移动端交互优化 */
+@media (pointer: coarse) {
+  html {
+    cursor: default !important;
+  }
+
+  [data-cursor] {
+    display: none !important;
+  }
+
+  button, a {
+    touch-action: manipulation; /* 提升移动端点击响应 */
+  }
+}
+
+/* 工具类层 */
+@layer utilities {
+  /* 硬件加速优化 */
+  .gpu-accelerate {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* 光标光晕动画 */
+  .shadow-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(100, 100, 255, 0.3)); }
+    50% { filter: drop-shadow(0 0 15px rgba(100, 100, 255, 0.5)); }
+  }
+}
+
+/* 背景过渡优化 */
+.bg-cover {
+  @apply transition-[background-image] duration-1000 ease-in-out;
+}
+
+/* 移动端优化增强 */
+@media (pointer: coarse) {
+  .interactive-tap {
+    @apply active:scale-95 transition-transform;
+  }
+}
+
+/* 基础层 */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
 }
 
 @layer utilities {
@@ -237,7 +230,7 @@
   }
 }
 
-/* property */
+/* 自定义属性 */
 @property --angle {
   syntax: "<angle>";
   initial-value: 0deg;
