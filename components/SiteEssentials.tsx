@@ -5,7 +5,68 @@ import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { useButtonStore } from '~/app/providers/button-store-providers'
+import { useButtonStore } from '~/app/providers/button-store-providers';
+import { create } from 'zustand';
+
+interface MouseStore {
+    position: [number, number];
+    velocity: number;
+    update: (pos: [number, number], vel: number) => void;
+}
+
+export const useMouseStore = create<MouseStore>((set) => ({
+    position: [0, 0],
+    velocity: 0,
+    update: (pos, vel) => set({ position: pos, velocity: vel })
+}));
+
+// 动态背景组件
+export function DynamicBackground() {
+    const { resolvedTheme } = useTheme();
+    const { position: [x, y], velocity } = useMouseStore();
+    const bgUrl = resolvedTheme === 'dark'
+        ? 'https://apir.yuncan.xyz/dark.php'
+        : 'https://apir.yuncan.xyz/light.php';
+
+    // 背景动态效果参数
+    const bgOffset = useTransform(() => [
+        (x / window.innerWidth - 0.5) * 20,
+        (y / window.innerHeight - 0.5) * 20
+    ]);
+
+    const bgBlur = useTransform(() =>
+        Math.min(12 + velocity * 0.5, 20)
+    );
+
+    const bgScale = useTransform(() =>
+        1 + Math.min(velocity * 0.002, 0.1)
+    );
+
+    return (
+        <motion.div
+            className="fixed inset-0 z-0 overflow-hidden"
+            style={{
+                backgroundImage: `url(${bgUrl})`,
+                backgroundPosition: 'center',
+                backgroundSize: 'cover',
+                opacity: 0.15,
+                filter: 'saturate(140%) contrast(105%)',
+                x: bgOffset[0],
+                y: bgOffset[1],
+                scale: bgScale,
+                blur: bgBlur
+            }}
+        >
+            <motion.div
+                className="absolute inset-0 backdrop-blur-xl"
+                style={{
+                    opacity: useTransform(() => velocity * 0.02)
+                }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent" />
+        </motion.div>
+    );
+}
 
 // 三维粒子光标
 export function MagicCursor() {
@@ -47,6 +108,7 @@ export function MagicCursor() {
         let lastY = window.innerHeight/2;
         let lastTime = Date.now();
 
+        const updateStore = useMouseStore.getState().update;
         const handleMouseMove = (e: MouseEvent) => {
             // 立即更新坐标
             const currentX = e.clientX;
@@ -82,6 +144,8 @@ export function MagicCursor() {
             document.querySelectorAll('button, a').forEach(el => {
                 (el as HTMLElement).style.cursor = 'none';
             });
+            // 新增：更新全局鼠标状态
+            updateStore([currentX, currentY], speed);
         };
 
         // 窗口大小变化处理
@@ -136,30 +200,6 @@ export function MagicCursor() {
                 }}
             />
         </>
-    );
-}
-
-// 动态背景组件
-export function DynamicBackground() {
-    const { resolvedTheme } = useTheme();
-    const bgUrl = resolvedTheme === 'dark'
-        ? 'https://apir.yuncan.xyz/dark.php'
-        : 'https://apir.yuncan.xyz/light.php';
-
-    return (
-        <div className="fixed inset-0 z-0 overflow-hidden">
-            <div
-                className="absolute inset-0 bg-cover bg-center opacity-20
-                    mix-blend-soft-light transition-opacity duration-1000"
-                style={{
-                    backgroundImage: `url(${bgUrl})`,
-                    filter: 'blur(12px) saturate(140%) contrast(105%)',
-                    opacity: 25,
-                    transition: 'filter 0.5s ease-in-out' // 过渡属性
-                }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent" />
-        </div>
     );
 }
 
@@ -225,34 +265,56 @@ export function ClickEffects() {
 export function Footer() {
     return (
         <footer className="fixed bottom-4 inset-x-0 text-center">
-            <div className="inline-flex px-4 py-2 rounded-full backdrop-blur-sm
-                bg-white/50 dark:bg-gray-900/50 shadow-lg hover:shadow-xl
-                transition-all duration-300 hover:scale-[1.03] group">
-                <div className="absolute inset-0 rounded-full border-2 border-transparent
-                    group-hover:border-primary/20 transition-colors" />
+            <div className="inline-flex px-6 py-3 rounded-2xl backdrop-blur-xl
+                bg-gradient-to-r from-white/70 to-white/90 dark:from-gray-900/70 dark:to-gray-900/90
+                shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_8px_32px_rgba(255,255,255,0.05)]
+                border border-gray-200/50 dark:border-gray-700/50
+                transition-all duration-500 hover:shadow-xl hover:-translate-y-1 group
+                relative overflow-hidden">
 
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-light
-                    bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                {/* 动态渐变边框 */}
+                <div className="absolute inset-0 rounded-2xl border-2 border-transparent
+                    group-hover:bg-[conic-gradient(var(--tw-gradient-stops))]
+                    group-hover:from-blue-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20
+                    transition-all duration-700 animate-gradient-rotate" />
+
+                {/* 文字优化 */}
+                <p className="text-sm font-medium
+                    bg-gradient-to-r from-blue-600 to-purple-500 dark:from-blue-400 dark:to-purple-300
+                    bg-clip-text text-transparent
+                    flex items-center">
                     <a
                         href="https://beian.miit.gov.cn"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:underline underline-offset-4 decoration-2"
+                        className="hover:underline underline-offset-4 decoration-dotted"
                     >
-                        晋ICP备2024030642号-1 Refactor by Yuncan   |
+                        晋ICP备2024030642号-1 | Refactor by Yuncan
                     </a>
+
+                    {/* SVG优化 */}
+                    <svg viewBox="0 0 100 100"
+                         className="w-5 h-5 ml-2 animate-breathe"
+                         style={{filter: 'drop-shadow(0 2px 4px rgba(99,102,241,0.3))'}}>
+                        <path
+                            d="M50 15a35 35 0 1 1 0 70 35 35 0 0 1 0-70zm0 10c-13.8 0-25 11.2-25 25s11.2 25 25 25 25-11.2 25-25-11.2-25-25-25z"
+                            fill="url(#gradient)"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        />
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#6366f1" />
+                                <stop offset="100%" stopColor="#a855f7" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
                 </p>
 
-                {/* SVG装饰 */}
-                <svg viewBox="0 0 100 100" className="w-4 h-4 ml-2 text-primary animate-pulse">
-                    <path
-                        d="M50 0 L100 50 L50 100 L0 50 Z"
-                        fill="currentColor"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                    />
-                </svg>
+                {/* 悬浮光效 */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity
+                    bg-[radial-gradient(circle_at_50%_120%,#6366f1_20%,transparent_60%)]" />
             </div>
         </footer>
-    );
+    )
 }
