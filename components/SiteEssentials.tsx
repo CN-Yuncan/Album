@@ -1,265 +1,182 @@
 // components/SiteEssentials.tsx
 'use client';
 
-import { useSpring, animated, config } from '@react-spring/web';
-import { useMotionValue, useTransform, motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
-import { useButtonStore } from '~/app/providers/button-store-providers';
 import { create } from 'zustand';
+import { useWebGLFluid, useGPUParticleSystem } from '@/lib/webgl-engine';
 
-interface MouseStore {
-    position: [number, number];
+// 全局状态存储（MCP协议共享）
+interface SystemState {
+    mouse: [number, number];
     velocity: number;
-    update: (pos: [number, number], vel: number) => void;
+    backgroundMatrix: number[];
+    updateSystem: (state: Partial<SystemState>) => void;
 }
 
-export const useMouseStore = create<MouseStore>((set) => ({
-    position: [0, 0],
+export const useSystemStore = create<SystemState>((set) => ({
+    mouse: [0, 0],
     velocity: 0,
-    update: (pos, vel) => set({ position: pos, velocity: vel })
+    backgroundMatrix: [],
+    updateSystem: (state) => set(state)
 }));
 
-// 动态背景组件
+// DynamicBackground 组件
 export function DynamicBackground() {
     const { resolvedTheme } = useTheme();
-    const { position: [x, y], velocity } = useMouseStore();
-    const bgUrl = resolvedTheme === 'dark'
-        ? 'https://apir.yuncan.xyz/dark.php'
-        : 'https://apir.yuncan.xyz/light.php';
+    const { mouse, velocity, backgroundMatrix } = useSystemStore();
+    const bgCanvasRef = useRef<HTMLCanvasElement>(null);
 
-    // 背景动态效果参数
-    const bgOffset = useTransform(() => [
-        (x / window.innerWidth - 0.5) * 20,
-        (y / window.innerHeight - 0.5) * 20
-    ]);
-
-    const bgBlur = useTransform(() =>
-        Math.min(12 + velocity * 0.5, 20)
-    );
-
-    const bgScale = useTransform(() =>
-        1 + Math.min(velocity * 0.002, 0.1)
-    );
-
-    return (
-        <motion.div
-            className="fixed inset-0 z-0 overflow-hidden"
-            style={{
-                backgroundImage: `url(${bgUrl})`,
-                backgroundPosition: 'center',
-                backgroundSize: 'cover',
-                opacity: 0.15,
-                filter: 'saturate(140%) contrast(105%)',
-                x: bgOffset[0],
-                y: bgOffset[1],
-                scale: bgScale,
-                blur: bgBlur
-            }}
-        >
-            <motion.div
-                className="absolute inset-0 backdrop-blur-xl"
-                style={{
-                    opacity: useTransform(() => velocity * 0.02)
-                }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent" />
-        </motion.div>
-    );
-}
-
-// 三维粒子光标
-export function MagicCursor() {
-    const { theme } = useTheme();
-    const cursorRef = useRef<HTMLDivElement>(null);
-
-    // 主光标动画
-    const [{ pos }, api] = useSpring(() => ({
-        pos: [window.innerWidth/2, window.innerHeight/2],
-        config: {
-            mass: 0.6,
-            tension: 680,
-            friction: 32,
-            clamp: true,
-            precision: 0.1
-        }
-    }));
-
-    // 拖影动画
-    const [{ pos: trailPos }, trailApi] = useSpring(() => ({
-        pos: [window.innerWidth/2, window.innerHeight/2],
-        config: { ...config.stiff, precision: 0.1 }
-    }));
-
-    // 动态参数
-    const scale = useMotionValue(1);
-    const rotateZ = useMotionValue(0);
-    const backgroundColor = useTransform(
-        scale,
-        [1, 2],
-        theme === 'dark'
-            ? ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.3)']
-            : ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']
-    );
-
+    // WebGL初始化
     useEffect(() => {
-        let animationFrameId: number;
-        let lastX = window.innerWidth/2;
-        let lastY = window.innerHeight/2;
-        let lastTime = Date.now();
+        const canvas = bgCanvasRef.current!;
+        const gl = canvas.getContext('webgl2', { alpha: true })!;
 
-        const updateStore = useMouseStore.getState().update;
-        const handleMouseMove = (e: MouseEvent) => {
-            // 立即更新坐标
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const now = Date.now();
-
-            // 计算速度
-            const deltaTime = (now - lastTime) || 1;
-            const velocityX = (currentX - lastX) / deltaTime;
-            const velocityY = (currentY - lastY) / deltaTime;
-            const speed = Math.hypot(velocityX, velocityY);
-
-            // 更新动画
-            api.start({ pos: [currentX, currentY] });
-            trailApi.start({ pos: [currentX, currentY] });
-
-            // 动态缩放和旋转
-            scale.set(1 + Math.min(speed * 0.02, 0.6));
-            rotateZ.set(Math.min(speed * 0.2, 25));
-
-            // 交互状态检测
-            const target = e.target as HTMLElement;
-            const isInteractive = target?.closest('a, button, [role="button"]');
-            cursorRef.current?.style.setProperty('--glow-scale', isInteractive ? '1.8' : '1');
-
-            // 更新坐标缓存
-            lastX = currentX;
-            lastY = currentY;
-            lastTime = now;
-
-            // 隐藏原生光标
-            document.body.style.cursor = 'none';
-            document.querySelectorAll('button, a').forEach(el => {
-                (el as HTMLElement).style.cursor = 'none';
+        // 初始化背景渲染管线
+        const initBackgroundPipeline = async () => {
+            const { initBaseLayer, renderBackground } = await import('@/lib/webgl-background');
+            const pipeline = await initBaseLayer(gl, {
+                theme: resolvedTheme,
+                dynamicTexture: resolvedTheme === 'dark'
+                    ? '/textures/nebula.webp'
+                    : '/textures/clouds.webp'
             });
-            // 新增：更新全局鼠标状态
-            updateStore([currentX, currentY], speed);
+
+            // MCP矩阵更新回调
+            const updateMatrix = (matrix: number[]) => {
+                pipeline.updateUniforms('u_bgMatrix', matrix);
+                useSystemStore.getState().updateSystem({ backgroundMatrix: matrix });
+            };
+
+            // 主渲染循环
+            const render = () => {
+                renderBackground(pipeline, {
+                    mousePosition: mouse,
+                    velocity: velocity * 0.005,
+                    time: performance.now() / 1000
+                });
+                requestAnimationFrame(render);
+            };
+            render();
         };
 
-        // 窗口大小变化处理
-        const handleResize = () => {
-            api.set({ pos: [lastX, lastY] });
-            trailApi.set({ pos: [lastX, lastY] });
-        };
-
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('resize', handleResize);
-
-        // 初始化位置
-        api.start({ pos: [lastX, lastY] });
-        trailApi.start({ pos: [lastX, lastY] });
-
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('resize', handleResize);
-            cancelAnimationFrame(animationFrameId);
-            document.body.style.cursor = 'default';
-        };
-    }, []);
+        initBackgroundPipeline();
+    }, [resolvedTheme]);
 
     return (
-        <>
-            {/* 主光标 */}
-            <animated.div
-                ref={cursorRef}
-                className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-1/2
-                    w-8 h-8 rounded-full backdrop-blur-lg border
-                    shadow-[0_0_30px_10px_var(--glow-color)]"
-                style={{
-                    x: pos.to(x => x),
-                    y: pos.to(y => y),
-                    scale,
-                    rotateZ,
-                    backgroundColor,
-                    borderColor: backgroundColor,
-                    '--glow-color': backgroundColor,
-                    '--glow-scale': 1
-                } as any}
-            />
-
-            {/* 拖影 */}
-            <animated.div
-                className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
-                    w-6 h-6 rounded-full bg-current opacity-20"
-                style={{
-                    x: trailPos.to(x => x),
-                    y: trailPos.to(y => y),
-                    scale: 0.8
-                }}
-            />
-        </>
+        <canvas
+            ref={bgCanvasRef}
+            className="fixed inset-0 z-0 pointer-events-none"
+            style={{
+                filter: `blur(${Math.min(12 + velocity * 0.2, 24)}px)`,
+                transform: `scale(${1 + velocity * 0.0005})`
+            }}
+        />
     );
 }
 
-// 量子涟漪效果（更新版）
+// MagicCursor 组件（WebGL量子光标）
+export function MagicCursor() {
+    const cursorRef = useRef<HTMLCanvasElement>(null);
+    const { theme } = useTheme();
+    const { mouse, velocity, backgroundMatrix } = useSystemStore();
+    const { initFluidEngine } = useWebGLFluid();
+
+    // 流体引擎初始化
+    useEffect(() => {
+        const canvas = cursorRef.current!;
+        const gl = canvas.getContext('webgl2', { alpha: true })!;
+
+        const { init, update } = initFluidEngine(gl, {
+            pressure: 0.28,
+            colorScheme: theme === 'dark'
+                ? [[0.9, 0.92, 1.0], [0.7, 0.8, 1.0]]
+                : [[0.1, 0.15, 0.3], [0.2, 0.25, 0.4]]
+        });
+
+        // 同步背景矩阵
+        init(backgroundMatrix);
+
+        // 运动更新
+        const updateCursor = () => {
+            update(mouse, velocity);
+            requestAnimationFrame(updateCursor);
+        };
+        updateCursor();
+    }, [theme, backgroundMatrix]);
+
+    return (
+        <canvas
+            ref={cursorRef}
+            className="fixed inset-0 z-50 pointer-events-none"
+            style={{
+                mixBlendMode: theme === 'dark' ? 'screen' : 'multiply',
+                filter: `url(#quantum-distortion)`
+            }}
+        />
+    );
+}
+
+// ClickEffects 组件（时空涟漪）
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
-    const lastClickTime = useRef(0);
-    const activeType = useButtonStore((state) => state.activeType)
-    const setActiveType = useButtonStore((state) => state.setActiveType)
+    const [ripples, setRipples] = useState<Array<RippleProfile>>([]);
+    const { initParticles, updateParticles } = useGPUParticleSystem();
 
-    const [{ scale, opacity }, api] = useSpring(() => ({
-        scale: 0,
-        opacity: 0,
-        config: { tension: 600, friction: 30 }
-    }));
+    // 粒子系统初始化
+    useEffect(() => {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2', { alpha: true })!;
 
+        initParticles(gl, {
+            capacity: 1e4,
+            texture: resolvedTheme === 'dark'
+                ? '/textures/sparkle.webp'
+                : '/textures/waterdrop.webp'
+        });
+    }, [resolvedTheme]);
+
+    // 点击事件处理
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            // 节流处理
-            if (Date.now() - lastClickTime.current < 100) return;
-            lastClickTime.current = Date.now();
+            const newRipple = createRippleProfile(e);
+            setRipples(prev => [...prev, newRipple]);
 
-            // 根据按钮类型变化效果
-            const intensity = activeType === 'important' ? 2 : 1;
-
-            api.start({
-                from: {
-                    scale: 0.5 * intensity,
-                    opacity: 0.8 / intensity
-                },
-                to: {
-                    scale: 3 * intensity,
-                    opacity: 0
-                },
-                config: {
-                    tension: 500 * intensity,
-                    friction: 20 / intensity
-                }
+            // MCP协议传播
+            useSystemStore.getState().updateSystem({
+                velocity: Math.min(e.movementX + e.movementY, 100)
             });
         };
 
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [activeType]);
+    }, []);
 
-    return (
-        <animated.div
-            className="fixed -translate-x-1/2 -translate-y-1/2 pointer-events-none
-                w-16 h-16 rounded-full mix-blend-screen"
-            style={{
-                scale,
-                opacity,
-                backgroundColor: resolvedTheme === 'dark'
-                    ? 'rgba(255,255,255,0.15)'
-                    : 'rgba(0,0,0,0.1)',
-                transform: 'translate(-50%, -50%)'
-            }}
-        />
-    );
+    // 涟漪动画
+    useAnimationFrame(() => {
+        setRipples(current => current.map(ripple => {
+            const updated = updateRipple(ripple);
+            updateParticles(updated.particles);
+            return updated;
+        }).filter(r => r.phase < 1));
+    });
+
+    return null;
 }
+
+// 辅助函数
+const createRippleProfile = (e: MouseEvent): RippleProfile => ({
+    position: [e.clientX, e.clientY],
+    phase: 0,
+    particles: generateWaveform(e),
+    color: chroma.scale(['#6366f1', '#a855f7']).mode('lch').gl()
+});
+
+const updateRipple = (ripple: RippleProfile) => ({
+    ...ripple,
+    phase: ripple.phase + 0.02,
+    particles: applyWaveCollapse(ripple.particles)
+});
 
 // 艺术化备案信息
 export function Footer() {
