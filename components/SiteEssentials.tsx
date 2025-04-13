@@ -1,7 +1,7 @@
 // components/SiteEssentials.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react'; // 添加useState导入
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSpring, animated, useSprings } from '@react-spring/web';
 import { useTheme } from 'next-themes';
 import { create } from 'zustand';
