@@ -1,4 +1,6 @@
 // components/SiteEssentials.tsx
+'use client'; // 必须作为文件的第一行
+
 import { useSpring, animated, config, useChain } from '@react-spring/web';
 import { useMotionValue, useTransform, motion, useVelocity } from 'framer-motion';
 import { useEffect, useRef, useMemo } from 'react';
