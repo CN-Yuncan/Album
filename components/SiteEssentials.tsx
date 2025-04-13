@@ -3,7 +3,7 @@
 
 import { useSpring, animated, useSprings } from '@react-spring/web';
 import { useMotionValue, useTransform } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { create } from 'zustand';
 
@@ -28,6 +28,7 @@ export function DynamicBackground() {
     const { position: [x, y], velocity, pressure } = useMouseStore();
 
     useEffect(() => {
+        if (typeof window === 'undefined') return; // SSR保护
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         let animationFrame: number;
@@ -100,9 +101,16 @@ export function MagicCursor() {
     const cursorRef = useRef<HTMLDivElement>(null);
     const trailCount = 8;
 
+    // 修复1：安全的初始位置
+    const [isMounted, setIsMounted] = useState(false);
+    const safePos = useMemo(() => [
+        typeof window !== 'undefined' ? window.innerWidth/2 : 0,
+        typeof window !== 'undefined' ? window.innerHeight/2 : 0
+    ], []);
+
     // 主光标动画
     const [{ pos }, api] = useSpring(() => ({
-        pos: [window.innerWidth/2, window.innerHeight/2],
+        pos: safePos,
         config: { mass: 0.8, tension: 1200, friction: 40 }
     }));
 
@@ -120,8 +128,11 @@ export function MagicCursor() {
     const energy = useTransform(turbulence, [0, 1], [0, 0.4]);
 
     useEffect(() => {
-        let lastX = window.innerWidth/2;
-        let lastY = window.innerHeight/2;
+        setIsMounted(true); // 标记组件已挂载
+        if (!cursorRef.current) return;
+
+        let lastX = safePos[0];
+        let lastY = safePos[1];
         let velocity = 0;
 
         const updateStore = useMouseStore.getState().update;
@@ -158,6 +169,8 @@ export function MagicCursor() {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
+    // 修复2：只在客户端渲染
+    if (!isMounted) return null;
     return (
         <>
             {/* 拖影粒子 */}
