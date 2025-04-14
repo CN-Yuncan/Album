@@ -44,7 +44,7 @@ export function DynamicBackground() {
 
     return (
         <motion.div
-            className="fixed inset-0 z-0 overflow-hidden"
+            className="fixed inset-0 z-[-1] overflow-hidden"
             style={{
                 backgroundImage: `url(${bgUrl})`,
                 backgroundPosition: 'center',
