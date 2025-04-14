@@ -59,6 +59,6 @@ export async function register() {
       console.error('Database initialization failed, please check your connection information.')
     }
   } catch (e) {
-    console.error('Initialization failed. Please try to troubleshoot the issue first. If you cannot resolve it, please carry the logs and submit feedback at: https://github.com/besscroft/PicImpact/issues.', e)
+    console.error('Initialization failed. Please try to troubleshoot the issue first. If you cannot resolve it, please carry the logs and submit feedback at: https://github.com/CN-Yuncan/Album/issues.', e)
   }
 }

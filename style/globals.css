@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @theme inline {
   --color-background: var(--background);
@@ -81,10 +84,16 @@
 /* 暗黑模式变量 */
 :root {
   --glow-intensity: 1;
+  --font-moqugufeng: 'moqugufeng', system-ui;
   --radius: 0.625rem;
+  --gradient-start: #6366f1;
+  --gradient-end: #8b5cf6;
+  --cursor-stroke: var(--bg-contrast);
+  --cursor-fill: var(--primary-color);
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
+  --color: rgba(255, 255, 255, 0.66);
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
@@ -100,6 +109,9 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
+  --color-1: rgb(79, 115, 204);
+  --color-2: rgb(182, 61, 139);
+  --color-3: rgb(137, 179, 63);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -116,7 +128,10 @@
 }
 
 .dark {
+  --color: rgba(255, 255, 255, 0.75);
   --background: oklch(0.141 0.005 285.823);
+  --gradient-start: #a855f7;
+  --gradient-end: #ec4899;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
@@ -134,6 +149,9 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
+  --color-1: rgb(79, 115, 204);
+  --color-2: rgb(182, 61, 139);
+  --color-3: rgb(137, 179, 63);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -183,10 +201,18 @@
 
 /* 基础层 */
 @layer base {
+  @font-face {
+    font-family: 'MoquGufeng';
+    src: url('/public/fonts/MoquGufeng.woff2') format('woff2');
+    font-display: swap;
+    font-weight: 400;
+    font-style: normal;
+    ascent-override: 92%;
+    descent-override: 18%;
+  }
   * { @apply border-border outline-ring/50; }
   body {
     @apply bg-background text-foreground;
-    cursor: none !important;
   }
 }
 
@@ -234,6 +260,168 @@ button, a, [role="button"] {
 
 button:active {
   transform: scale(0.96);
+}
+
+
+/* 暗色模式过渡优化 */
+@media (prefers-color-scheme: dark) {
+  .header-container {
+    transition:
+            background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+            box-shadow 0.3s ease-out !important;
+  }
+}
+
+@keyframes text-shine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.animate-text-shine {
+  background-size: 200% auto;
+  background-image: linear-gradient(
+          45deg,
+          #4f46e5 25%,
+          #9333ea 50%,
+          #4f46e5 75%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-shine 8s linear infinite;
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .animate-text-shine {
+    background-image: linear-gradient(
+            45deg,
+            #818cf8 25%,
+            #c084fc 50%,
+            #818cf8 75%
+    );
+  }
+}
+
+/* 模糊层渲染优化 */
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  background-color: rgba(0, 0, 0, 0); /* 透明背景强制渲染 */
+}
+
+.dark .text-white {
+  transition: color 0.3s ease;
+}
+
+@layer utilities {
+  .animate-gradient-rotate {
+    --gradient-angle: 0deg;
+    animation: gradient-rotate 8s linear infinite;
+    background: conic-gradient(
+            from var(--gradient-angle),
+            var(--tw-gradient-from),
+            var(--tw-gradient-via),
+            var(--tw-gradient-to)
+    );
+  }
+
+  @keyframes gradient-rotate {
+    to { --gradient-angle: 360deg; }
+  }
+
+  @property --gradient-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+}
+
+.bg-space-texture {
+  background-image:
+          radial-gradient(circle at 50% 50%,
+          rgba(255,255,255,0.1) 0%,
+          transparent 60%),
+          linear-gradient(45deg,
+          rgba(79, 115, 204, 0.1) 0%,
+          rgba(182, 61, 139, 0.1) 50%,
+          rgba(137, 179, 63, 0.1) 100%);
+  transition:
+          background-position 0.8s cubic-bezier(0.23, 1, 0.32, 1),
+          filter 0.6s ease-out;
+}
+
+.cursor {
+  width: var(--size);
+  height: var(--size);
+  background: var(--color);
+  border-radius: 50%;
+  position: fixed;
+  z-index: 999;
+  pointer-events: none;
+  transition:
+          transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          background 0.4s ease;
+  backdrop-filter: invert(1); /* 智能反色 */
+}
+
+.cursor-f {
+  width: var(--size);
+  height: var(--size);
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 998;
+  border: 3px solid;
+  animation: rgb-pulse 4s linear infinite;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
+@keyframes rgb-pulse {
+  0% {
+    border-color: var(--color-1);
+    filter: drop-shadow(0 0 10px var(--color-1));
+  }
+  33% {
+    border-color: var(--color-2);
+    filter: drop-shadow(0 0 18px var(--color-2));
+  }
+  66% {
+    border-color: var(--color-3);
+    filter: drop-shadow(0 0 10px var(--color-3));
+  }
+  100% {
+    border-color: var(--color-1);
+    filter: drop-shadow(0 0 10px var(--color-1));
+  }
+}
+
+/* 点击效果优化 */
+button:active ~ .cursor,
+body:active .cursor {
+  transform: scale(4.5);
+  background: rgba(255, 255, 255, 0.5);
+  transition-duration: 0.15s;
+}
+
+button:active ~ .cursor-f,
+body:active .cursor-f {
+  transform: scale(0.4) rotate(180deg);
+  opacity: 1;
+  animation-duration: 2s;
+  transition-duration: 0.15s;
+}
+
+/* 禁用光标的基础元素 */
+html,
+body {
+  cursor: none;
+}
+
+html *,
+body * {
+  cursor: inherit;
 }
 
 /* 自定义属性 */

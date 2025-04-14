@@ -16,7 +16,7 @@ export default function Login() {
               height={36}
             />
           </div>
-          PicImpact
+          Yuncan 之江影集
         </Link>
         <UserFrom/>
       </div>

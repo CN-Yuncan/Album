@@ -14,6 +14,17 @@ const baseConfig = {
       exclude: ['error'],
     },
   },
+  headers: async () => [
+    {
+      source: '/fonts/:font*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable'
+        }
+      ]
+    }
+  ],
   serverExternalPackages: ['pg'],
   eslint: {
     ignoreDuringBuilds: true,

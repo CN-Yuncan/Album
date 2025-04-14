@@ -11,12 +11,13 @@ import { ButtonStoreProvider } from '~/app/providers/button-store-providers'
 import { ConfigStoreProvider } from '~/app/providers/config-store-providers'
 
 // 核心组件
-import { MagicCursor, Footer, ClickEffects, DynamicBackground } from '~/components/SiteEssentials'
+import { MagicCursor, Footer, DynamicBackground } from '~/components/SiteEssentials'
 
 // 数据获取
 import { fetchConfigsByKeys } from '~/server/db/query/configs'
 
 // 样式
+import { moqugufeng } from '~/app/font'
 import '~/style/globals.css'
 
 type Props = {
@@ -34,7 +35,7 @@ export async function generateMetadata(
     ])
 
     return {
-        title: data?.find((item: any) => item.config_key === 'custom_title')?.config_value || 'PicImpact',
+        title: data?.find((item: any) => item.config_key === 'custom_title')?.config_value || 'Yuncan 之江影集',
         icons: {
             icon: data?.find((item: any) => item.config_key === 'custom_favicon_url')?.config_value || './favicon.ico'
         },
@@ -48,29 +49,33 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     return (
         <html
             lang={locale}
-            className="overflow-y-auto scrollbar-hide"
+            className={`overflow-y-auto scrollbar-hide ${moqugufeng.variable} font-moqugufeng`}
             suppressHydrationWarning
-            style={{ cursor: 'none' }}
+            style={{cursor: 'none'}}
         >
+        <head>
+            <link
+                rel="preload"
+                href="/public/fonts/MoquGufeng.woff2"
+                as="font"
+                type="font/woff2"
+                crossOrigin="anonymous"
+                key="moqungufeng-preload"
+            />
+        </head>
         <body className="min-h-screen bg-background antialiased">
         <SessionProviders>
             <NextIntlClientProvider messages={messages}>
                 <ConfigStoreProvider>
                     <ButtonStoreProvider>
                         <ThemeProvider>
-                            <DynamicBackground /> {/* 新增背景层 */}
-                            <MagicCursor />
-                            <ClickEffects />
-                            {/* 主要内容区域 */}
-                            <main className="relative pb-24 z-10"> {/* 提升层级 */}
-                                <ToasterProviders />
-                                <ProgressBarProviders>
-                                    {children}
-                                </ProgressBarProviders>
-                            </main>
-
-                            {/* 固定底部备案 */}
-                            <Footer />
+                            <DynamicBackground/>
+                            <MagicCursor/>
+                            <ToasterProviders/>
+                            <ProgressBarProviders>
+                                {children}
+                            </ProgressBarProviders>
+                            <Footer/>
                         </ThemeProvider>
                     </ButtonStoreProvider>
                 </ConfigStoreProvider>

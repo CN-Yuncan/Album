@@ -102,7 +102,7 @@ export default function Command(props: Readonly<AlbumDataProps>) {
             <CommandItem className="justify-end">
               <a
                 className="text-xs text-zinc-600 flex items-center gap-0.25"
-                href="https://github.com/besscroft/PicImpact"
+                href="https://github.com/CN-Yuncan/Album"
                 target="_blank"
               >
                 GitHub

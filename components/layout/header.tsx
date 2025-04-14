@@ -1,4 +1,3 @@
-// components/layout/header.tsx
 import Logo from '~/components/layout/logo'
 import type { AlbumDataProps } from '~/types/props'
 import HeaderIconGroup from '~/components/layout/header-icon-group'
@@ -7,32 +6,52 @@ export default async function Header(props: Readonly<AlbumDataProps>) {
     return (
         <div
             className="flex items-center w-full p-2 sm:w-[70%] mx-auto sticky top-0 z-50
-            rounded-2xl backdrop-blur-xl
-            bg-gradient-to-r from-white/90 via-white/85 to-white/80
-            dark:from-black/90 dark:via-black/85 dark:to-black/80
-            shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_30px_rgba(255,255,255,0.05)]
-            border border-gray-100/50 dark:border-gray-800/50
-            transition-all duration-500 hover:shadow-[0_15px_40px_rgba(0,0,0,0.15)]
-            hover:-translate-y-[2px] group overflow-hidden"
+      rounded-2xl
+      bg-[hsl(0_0%_100%/0.8)]  // 亮色模式基础
+      dark:bg-[hsl(240_5%_7%/0.95)] // 精准暗色 HSL 值
+      shadow-[0_10px_30px_hsl(240_10%_3.9%/0.1)]
+      dark:shadow-[0_10px_30px_hsl(0_0%_98%/0.03)] // 阴影透明度调整
+      border border-gray-100/50
+      dark:border-gray-800
+      transition-all duration-500
+      hover:shadow-[0_15px_40px_hsl(240_10%_3.9%/0.15)]
+      dark:hover:shadow-[0_15px_40px_hsl(0_0%_98%/0.05)]
+      hover:-translate-y-[2px] group overflow-hidden
+      backdrop-blur-xl  // 单独声明模糊层
+      before:absolute before:inset-0 before:-z-1  // 隔离背景层
+      before:bg-[radial-gradient(circle_at_50%_-20%,hsl(263.4_70%_50.4%/0.1),transparent_60%)]
+      dark:before:bg-[radial-gradient(circle_at_50%_-20%,hsl(263.4_70%_50.4%/0.2),transparent_70%)]"
             style={{
                 willChange: 'transform, background-color, box-shadow',
                 transform: 'translateZ(0)',
-                // 添加伪元素实现双层渐变边框
-                position: 'relative',
             }}
         >
+            {/* Logo 区域 */}
             <div className="justify-start relative z-20">
                 <Logo/>
             </div>
+
+            {/* 中间区域 */}
             <div className="flex gap-1 flex-1 select-none justify-center w-full">
+                <h1 className="font-moqugufeng text-3xl sm:text-2xl
+  [font-family:var(--font-moqugufeng)] !important
+  tracking-[0.2em] leading-[1.8]">
+                    云笺藏霁月 镜底锁烟霞
+                </h1>
             </div>
+
+            {/* 图标组 */}
             <div className="flex h-full items-center space-x-2 justify-end relative z-20">
                 <HeaderIconGroup {...props} />
             </div>
-            {/* 添加动态光效装饰层 */}
+
+            {/* 动态光效层 (优化版) */}
             <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity
-                bg-[radial-gradient(circle_at_50%_-20%,#fff_10%,transparent_60%)]
-                dark:bg-[radial-gradient(circle_at_50%_-20%,#4f46e5_10%,transparent_60%)] pointer-events-none z-10"/>
+        bg-[radial-gradient(circle_at_50%_-20%,hsl(0_0%_100%/0.4)_15%,transparent_70%)]
+        dark:bg-[radial-gradient(circle_at_50%_-20%,hsl(263.4_70%_50.4%/0.3)_10%,transparent_70%)]
+        mix-blend-mode-screen
+        pointer-events-none z-10"
+            />
         </div>
-    );
+    )
 }
