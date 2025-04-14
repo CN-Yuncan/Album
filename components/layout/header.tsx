@@ -33,11 +33,22 @@ export default async function Header(props: Readonly<AlbumDataProps>) {
 
             {/* 中间区域 */}
             <div className="flex gap-1 flex-1 select-none justify-center w-full">
-                <h1 className="font-moqugufeng text-3xl sm:text-2xl
-  [font-family:var(--font-moqugufeng)] !important
-  tracking-[0.2em] leading-[1.8]">
-                    云笺藏霁月 镜底锁烟霞
-                </h1>
+                <h1 className="font-moqugufeng 
+    text-xl      // 移动端基准
+    xs:text-2xl   // 超小屏
+    sm:text-[1.35rem] // 小屏
+    md:text-2xl   // 中屏
+    lg:text-3xl   // 大屏
+    tracking-[0.15em]  // 调整字间距
+    sm:tracking-[0.2em]
+    leading-[1.4] 
+    sm:leading-[1.8]
+    break-keep    // 防止文字换行
+    px-1          // 增加左右内边距
+    [word-spacing:-0.05em]  // 微调字间距
+    [font-family:var(--font-moqugufeng)]">
+    云笺藏霁月 镜底锁烟霞
+  </h1>
             </div>
 
             {/* 图标组 */}
