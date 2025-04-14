@@ -1,7 +1,7 @@
 // components/SiteEssentials.tsx
 'use client';
 
-import { useSpring, animated } from '@react-spring/web';
+import { useSpring, animated, config } from '@react-spring/web';
 import { useMotionValue, useTransform, motion } from 'framer-motion';
 import { useEffect, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
@@ -77,134 +77,157 @@ export function DynamicBackground() {
     );
 }
 
-// 三维粒子光标 - 最终稳定版
+// 三维粒子光标 - 最终完善版
 export function MagicCursor() {
     const { theme } = useTheme();
     const cursorRef = useRef<HTMLDivElement>(null);
 
-    // 安全获取窗口尺寸
-    const getWindowSize = () => ({
-        width: typeof window !== 'undefined' ? window.innerWidth : 0,
-        height: typeof window !== 'undefined' ? window.innerHeight : 0
-    });
-
-    // 状态管理
+    // 状态统一管理
     const interaction = useRef({
         isPressed: false,
-        position: [getWindowSize().width/2, getWindowSize().height/2],
+        position: [typeof window !== 'undefined' ? window.innerWidth/2 : 0,
+            typeof window !== 'undefined' ? window.innerHeight/2 : 0],
         velocity: 0,
         lastTime: Date.now()
     });
 
     // 主光标动画
-    const mainSpring = useSpring({
+    const [{ x, y }, mainApi] = useSpring(() => ({
         x: interaction.current.position[0],
         y: interaction.current.position[1],
         config: { mass: 0.4, tension: 800, friction: 28 }
-    });
+    }));
 
-    // 拖影系统（独立声明每个实例）
-    const trail1 = useSpring({ x: mainSpring.x.get(), y: mainSpring.y.get() });
-    const trail2 = useSpring({ x: mainSpring.x.get(), y: mainSpring.y.get() });
-    const trail3 = useSpring({ x: mainSpring.x.get(), y: mainSpring.y.get() });
-    const trail4 = useSpring({ x: mainSpring.x.get(), y: mainSpring.y.get() });
-    const trail5 = useSpring({ x: mainSpring.x.get(), y: mainSpring.y.get() });
+    // 拖影系统（顶层声明）
+    const [trail1, trail1Api] = useSpring(() => ({
+        x: interaction.current.position[0],
+        y: interaction.current.position[1],
+        config: { tension: 520, friction: 20, mass: 0.3 }
+    }));
+    const [trail2, trail2Api] = useSpring(() => ({
+        x: interaction.current.position[0],
+        y: interaction.current.position[1],
+        config: { tension: 440, friction: 20, mass: 0.3 }
+    }));
+    const [trail3, trail3Api] = useSpring(() => ({
+        x: interaction.current.position[0],
+        y: interaction.current.position[1],
+        config: { tension: 360, friction: 20, mass: 0.3 }
+    }));
+    const [trail4, trail4Api] = useSpring(() => ({
+        x: interaction.current.position[0],
+        y: interaction.current.position[1],
+        config: { tension: 280, friction: 20, mass: 0.3 }
+    }));
+    const [trail5, trail5Api] = useSpring(() => ({
+        x: interaction.current.position[0],
+        y: interaction.current.position[1],
+        config: { tension: 200, friction: 20, mass: 0.3 }
+    }));
+
+    // 拖影配置
+    const trails = [
+        { api: trail1Api, style: trail1, delay: 15 },
+        { api: trail2Api, style: trail2, delay: 30 },
+        { api: trail3Api, style: trail3, delay: 45 },
+        { api: trail4Api, style: trail4, delay: 60 },
+        { api: trail5Api, style: trail5, delay: 75 }
+    ];
 
     // 动画参数
-    const scaleSpring = useSpring({
+    const { scale } = useSpring({
         scale: interaction.current.isPressed ? 0.7 : 1,
         config: { tension: 600, friction: 20 }
     });
 
     const rotateZ = useMotionValue(0);
 
-    // 颜色配置
-    const colorConfig = useMemo(() => ({
-        dark: { baseHue: 260, saturation: '100%', lightness: '60%' },
-        light: { baseHue: 180, saturation: '90%', lightness: '50%' }
-    }), []);
+    // 颜色配置系统
+    const colorConfig = {
+        dark: { primary: 260, secondary: 180, saturation: '100%', lightness: '60%' },
+        light: { primary: 180, secondary: 300, saturation: '90%', lightness: '50%' }
+    };
 
-    // 颜色生成
-    const getColor = useMemo(() => (hueOffset: number, alpha: number) => {
+    // 动态颜色生成器
+    const getColor = (hueOffset: number, alpha: number) => {
         const config = theme === 'dark' ? colorConfig.dark : colorConfig.light;
-        const baseHue = interaction.current.isPressed ?
-            config.baseHue + 20 :
-            config.baseHue;
+        const baseHue = interaction.current.isPressed ? config.primary + 20 : config.primary;
         return `hsla(
             ${(baseHue + hueOffset) % 360},
             ${config.saturation},
             ${interaction.current.isPressed ? '70%' : config.lightness},
             ${alpha}
         )`;
-    }, [theme]);
+    };
 
-    // 动态渐变（兼容性修复）
+    // 动态渐变
     const gradient = useTransform(
-        [scaleSpring.scale, rotateZ],
-        (values) => `conic-gradient(
-            from ${values[1]}deg,
+        [scale, rotateZ],
+        ([s, r]) => `conic-gradient(
+            from ${r}deg,
             ${getColor(0, 0.8)},
             ${getColor(60, 0.6)},
             ${getColor(120, 0.4)}
         )`
     );
 
-    // 事件处理（稳定引用）
-    const handlers = useMemo(() => ({
-        move: (e: MouseEvent) => {
-            const { width, height } = getWindowSize();
-            const x = Math.min(Math.max(e.clientX, 0), width);
-            const y = Math.min(Math.max(e.clientY, 0), height);
-
-            // 更新主光标
-            mainSpring.x.start(x);
-            mainSpring.y.start(y);
-
-            // 更新拖影
-            const updateTrail = (trail: typeof trail1, delay: number) => {
-                trail.x.start(x, { delay });
-                trail.y.start(y, { delay });
-            };
-            updateTrail(trail1, 15);
-            updateTrail(trail2, 30);
-            updateTrail(trail3, 45);
-            updateTrail(trail4, 60);
-            updateTrail(trail5, 75);
+    // 事件处理器
+    const handleInteraction = useMemo(() => ({
+        mouseMove: (e: MouseEvent) => {
+            const currentX = Math.min(Math.max(e.clientX, 0), window.innerWidth);
+            const currentY = Math.min(Math.max(e.clientY, 0), window.innerHeight);
+            const now = Date.now();
 
             // 计算速度
-            const now = Date.now();
-            const delta = now - interaction.current.lastTime;
-            interaction.current.velocity = Math.hypot(
-                (x - interaction.current.position[0]) / delta,
-                (y - interaction.current.position[1]) / delta
-            );
-            interaction.current.position = [x, y];
+            const deltaTime = now - interaction.current.lastTime || 1;
+            const velocityX = (currentX - interaction.current.position[0]) / deltaTime;
+            const velocityY = (currentY - interaction.current.position[1]) / deltaTime;
+            interaction.current.velocity = Math.hypot(velocityX, velocityY);
             interaction.current.lastTime = now;
+
+            // 更新位置
+            interaction.current.position = [currentX, currentY];
+
+            // 更新主光标
+            mainApi.start({ x: currentX, y: currentY });
+
+            // 更新拖影
+            trails.forEach(({ api }, i) => {
+                api.start({
+                    x: currentX,
+                    y: currentY,
+                    delay: i * 15
+                });
+            });
 
             // 更新旋转
             rotateZ.set(Math.min(interaction.current.velocity * 0.2, 25));
         },
-        down: () => {
+        mouseDown: () => {
             interaction.current.isPressed = true;
-            scaleSpring.scale.start(0.7);
+            scale.start(0.7);
             cursorRef.current?.style.setProperty('--glow-intensity', '1.8');
         },
-        up: () => {
+        mouseUp: () => {
             interaction.current.isPressed = false;
-            scaleSpring.scale.start(1);
+            scale.start(1);
             cursorRef.current?.style.setProperty('--glow-intensity', '1');
         },
         resize: () => {
-            const center = [
-                getWindowSize().width/2,
-                getWindowSize().height/2
+            interaction.current.position = [
+                window.innerWidth/2,
+                window.innerHeight/2
             ];
-            interaction.current.position = center;
-            mainSpring.x.start(center[0]);
-            mainSpring.y.start(center[1]);
-            [trail1, trail2, trail3, trail4, trail5].forEach(trail => {
-                trail.x.start(center[0]);
-                trail.y.start(center[1]);
+            mainApi.start({
+                x: interaction.current.position[0],
+                y: interaction.current.position[1]
+            });
+            trails.forEach(({ api }) => {
+                api.start({
+                    x: interaction.current.position[0],
+                    y: interaction.current.position[1],
+                    immediate: true
+                });
             });
         }
     }), []);
@@ -212,24 +235,23 @@ export function MagicCursor() {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // 事件绑定
-        const events = [
-            { type: 'mousemove', handler: handlers.move },
-            { type: 'mousedown', handler: handlers.down },
-            { type: 'mouseup', handler: handlers.up },
-            { type: 'resize', handler: handlers.resize }
+        const eventListeners = [
+            { event: 'mousemove', handler: handleInteraction.mouseMove },
+            { event: 'mousedown', handler: handleInteraction.mouseDown },
+            { event: 'mouseup', handler: handleInteraction.mouseUp },
+            { event: 'resize', handler: handleInteraction.resize }
         ];
 
-        events.forEach(({ type, handler }) =>
-            window.addEventListener(type, handler)
-        );
+        eventListeners.forEach(({ event, handler }) => {
+            window.addEventListener(event, handler);
+        });
 
         return () => {
-            events.forEach(({ type, handler }) =>
-                window.removeEventListener(type, handler)
-            );
+            eventListeners.forEach(({ event, handler }) => {
+                window.removeEventListener(event, handler);
+            });
         };
-    }, [handlers]);
+    }, [handleInteraction]);
 
     return (
         <>
@@ -239,9 +261,9 @@ export function MagicCursor() {
                 className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-1/2
                     w-14 h-14 backdrop-blur-xl transition-all duration-300 ease-out"
                 style={{
-                    x: mainSpring.x,
-                    y: mainSpring.y,
-                    scale: scaleSpring.scale,
+                    x,
+                    y,
+                    scale,
                     rotateZ,
                     backgroundImage: gradient,
                     clipPath: 'polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%)',
@@ -259,14 +281,13 @@ export function MagicCursor() {
             </animated.div>
 
             {/* 拖影系统 */}
-            {[trail1, trail2, trail3, trail4, trail5].map((trail, i) => (
+            {trails.map(({ style }, i) => (
                 <animated.div
                     key={`trail-${i}`}
                     className="pointer-events-none fixed z-30 -translate-x-1/2 -translate-y-1/2
                         w-8 h-8 backdrop-blur-md"
                     style={{
-                        x: trail.x,
-                        y: trail.y,
+                        ...style,
                         opacity: 0.8 - i * 0.15,
                         clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
                         background: `linear-gradient(
@@ -281,14 +302,14 @@ export function MagicCursor() {
     );
 }
 
-// 量子涟漪效果 - 稳定版
+// 量子涟漪效果 - 修复版
 export function ClickEffects() {
     const { resolvedTheme } = useTheme();
     const lastClickTime = useRef(0);
     const activeType = useButtonStore((state) => state.activeType);
     const cursorRef = useRef<HTMLDivElement>(null);
 
-    // 静态声明effects
+    // 静态声明effects数组
     const [effect1, effect1Api] = useSpring(() => ({ scale: 0, opacity: 0, rotate: 0 }));
     const [effect2, effect2Api] = useSpring(() => ({ scale: 0, opacity: 0, rotate: 0 }));
     const [effect3, effect3Api] = useSpring(() => ({ scale: 0, opacity: 0, rotate: 0 }));
@@ -299,8 +320,8 @@ export function ClickEffects() {
         { api: effect3Api, style: effect3, config: { tension: 1200, friction: 13 } }
     ];
 
-    // 动态颜色
-    const getEffectColor = useMemo(() => (index: number) => {
+    // 动态颜色生成
+    const getEffectColor = (index: number) => {
         const baseHue = resolvedTheme === 'dark' ? 260 : 180;
         return `hsla(
             ${(baseHue + index * 40) % 360},
@@ -308,7 +329,7 @@ export function ClickEffects() {
             ${resolvedTheme === 'dark' ? '60%' : '50%'},
             ${0.3 - index * 0.1}
         )`;
-    }, [resolvedTheme]);
+    };
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
@@ -338,14 +359,16 @@ export function ClickEffects() {
                 });
             });
 
-            // 粒子效果
-            cursorRef.current?.animate([
-                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
-                { transform: 'translate(-50%, -50%) scale(1.8)', opacity: 0 }
-            ], {
-                duration: 300,
-                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-            });
+            // 粒子爆破效果
+            if (cursorRef.current) {
+                cursorRef.current.animate([
+                    { transform: 'scale(1)', opacity: 1 },
+                    { transform: 'scale(1.8)', opacity: 0 }
+                ], {
+                    duration: 300,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+            }
         };
 
         document.addEventListener('click', handleClick);

@@ -7,8 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 
 /** @type {import('next').NextConfig} */
 const baseConfig = {
+  reactStrictMode: process.env.NODE_ENV === 'production',
   output: "standalone",
-  reactStrictMode: true,
   compiler: {
     removeConsole: {
       exclude: ['error'],
