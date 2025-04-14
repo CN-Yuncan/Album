@@ -11,7 +11,7 @@ import { ButtonStoreProvider } from '~/app/providers/button-store-providers'
 import { ConfigStoreProvider } from '~/app/providers/config-store-providers'
 
 // 核心组件
-import {  MagicCursor, Footer, ClickEffects, DynamicBackground } from '~/components/SiteEssentials'
+import { MagicCursor, Footer, ClickEffects, DynamicBackground } from '~/components/SiteEssentials'
 
 // 数据获取
 import { fetchConfigsByKeys } from '~/server/db/query/configs'
@@ -59,10 +59,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                     <ButtonStoreProvider>
                         <ThemeProvider>
                             <DynamicBackground /> {/* 新增背景层 */}
-
                             <MagicCursor />
                             <ClickEffects />
-
                             {/* 主要内容区域 */}
                             <main className="relative pb-24 z-10"> {/* 提升层级 */}
                                 <ToasterProviders />
