@@ -1,6 +1,6 @@
 <h1 align="center">
 <img width="28" src="./public/maskable-icon.png">
-PicImpact
+PicImpact-Refactoring
 </h1>
 
 <p align="center">
@@ -31,7 +31,7 @@ PicImpact 是一个支持自部署的摄影师专用的摄影作品展示网站�
 
 > 我们推荐当新版本发布时您再进行版本更新！
 
-<a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fbesscroft%2FPicImpact&env=DATABASE_URL,AUTH_SECRET"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
+<a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FCN-Yuncan%2FAlbum&env=DATABASE_URL,AUTH_SECRET"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
 
 | Key          | 备注                                                                                           |
 |--------------|----------------------------------------------------------------------------------------------|
