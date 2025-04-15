@@ -26,6 +26,8 @@ export type ButtonState = {
   searchOpen: boolean
   loginHelp: boolean
   command: boolean
+  cosEdit: boolean
+  cosData: Config[]
 }
 
 export type ButtonActions = {
@@ -52,6 +54,8 @@ export type ButtonActions = {
   setSearchOpen: (searchOpen: boolean) => void
   setLoginHelp: (loginHelp: boolean) => void
   setCommand: (command: boolean) => void
+  setCosEdit: (cosEdit: boolean) => void
+  setCosEditData: (cosData: Config[]) => void
 }
 
 export type ButtonStore = ButtonState & ButtonActions
@@ -81,6 +85,8 @@ export const initButtonStore = (): ButtonState => {
     searchOpen: false,
     loginHelp: false,
     command: false,
+    cosEdit: false,
+    cosData: [] as Config[],
   }
 }
 
@@ -108,6 +114,8 @@ export const defaultInitState: ButtonState = {
   searchOpen: false,
   loginHelp: false,
   command: false,
+  cosEdit: false,
+  cosData: [] as Config[],
 }
 
 export const createButtonStore = (
@@ -185,7 +193,13 @@ export const createButtonStore = (
         })),
         setCommand: (commandValue) => set(() => ({
           command: commandValue,
-        }))
+        })),
+        setCosEdit: (cosEditValue) => set(() => ({
+          cosEdit: cosEditValue,
+        })),
+        setCosEditData: (cosDataValue) => set(() => ({
+          cosData: cosDataValue,
+        })),
       }),
       {
         name: 'pic-impact-button-storage', // name of the item in the storage (must be unique)

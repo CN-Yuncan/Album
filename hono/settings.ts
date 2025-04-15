@@ -6,7 +6,7 @@ import { auth } from '~/server/auth'
 import CryptoJS from 'crypto-js'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { updateAListConfig, updateCustomInfo, updateR2Config, updateS3Config } from '~/server/db/operate/configs'
+import { updateAListConfig, updateCustomInfo, updateR2Config, updateS3Config, updateCosConfig } from '~/server/db/operate/configs'
 import { updatePassword, updateUserInfo } from '~/server/db/operate'
 
 const app = new Hono()
@@ -40,8 +40,11 @@ app.get('/r2-info', async (c) => {
 })
 
 app.get("/get-user-info", async (c) => {
-  const { user } = await auth()
-  const data = await fetchUserById(user?.id);
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
+  const data = await fetchUserById(session.user.id);
   
   return c.json({
     id: data?.id,
@@ -50,6 +53,7 @@ app.get("/get-user-info", async (c) => {
     image: data?.image
   })
 })
+
 app.get('/s3-info', async (c) => {
   const data = await fetchConfigsByKeys([
     'accesskey_id',
@@ -61,6 +65,19 @@ app.get('/s3-info', async (c) => {
     'force_path_style',
     's3_cdn',
     's3_cdn_url'
+  ]);
+  return c.json(data)
+})
+
+app.get('/cos-info', async (c) => {
+  const data = await fetchConfigsByKeys([
+    'cos_secret_id',
+    'cos_secret_key',
+    'cos_region',
+    'cos_bucket',
+    'cos_storage_folder',
+    'cos_cdn',
+    'cos_cdn_url'
   ]);
   return c.json(data)
 })
@@ -106,6 +123,21 @@ app.put('/update-s3-info', async (c) => {
   return c.json(data)
 })
 
+app.put('/update-cos-info', async (c) => {
+  const query = await c.req.json()
+
+  const secretId = query?.find((item: Config) => item.config_key === 'cos_secret_id').config_value
+  const secretKey = query?.find((item: Config) => item.config_key === 'cos_secret_key').config_value
+  const region = query?.find((item: Config) => item.config_key === 'cos_region').config_value
+  const bucket = query?.find((item: Config) => item.config_key === 'cos_bucket').config_value
+  const storageFolder = query?.find((item: Config) => item.config_key === 'cos_storage_folder').config_value
+  const cosCdn = query?.find((item: Config) => item.config_key === 'cos_cdn').config_value
+  const cosCdnUrl = query?.find((item: Config) => item.config_key === 'cos_cdn_url').config_value
+
+  const data = await updateCosConfig({ secretId, secretKey, region, bucket, storageFolder, cosCdn, cosCdnUrl });
+  return c.json(data)
+})
+
 app.put('/update-custom-info', async (c) => {
   const query = await c.req.json() satisfies {
     title: string
@@ -132,9 +164,12 @@ app.put('/update-custom-info', async (c) => {
 })
 
 app.put('/update-password', async (c) => {
-  const { user } = await auth()
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
   const pwd = await c.req.json()
-  const daUser = await fetchUserById(user?.id)
+  const daUser = await fetchUserById(session.user.id)
   const secretKey = await fetchSecretKey()
   if (!secretKey || !secretKey.config_value) {
     throw new HTTPException(500, { message: 'Failed' })
@@ -144,7 +179,7 @@ app.put('/update-password', async (c) => {
   try {
     if (daUser && hashedOldPassword === daUser.password) {
       const hashedNewPassword = CryptoJS.HmacSHA512(pwd.newPassword, secretKey?.config_value).toString()
-      await updatePassword(user?.id, hashedNewPassword);
+      await updatePassword(session.user.id, hashedNewPassword);
       return c.json({
         code: 200,
         message: 'Success'
@@ -161,7 +196,10 @@ app.put('/update-password', async (c) => {
 })
 
 app.put('/update-user-info', async (c) => {
-  const { user } = await auth()
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
   const { name, email, avatar } = await c.req.json() 
   try {
     const updates: {
@@ -174,7 +212,7 @@ app.put('/update-user-info', async (c) => {
     if (email) updates.email = email
     if (avatar) updates.image = avatar
     if (Object.keys(updates).length > 0) {
-      await updateUserInfo(user?.id, updates);
+      await updateUserInfo(session.user.id, updates);
     }
     
     return c.json({

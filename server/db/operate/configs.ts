@@ -270,3 +270,25 @@ export async function deleteAuthSecret() {
     })
   })
 }
+
+/**
+ * 更新 COS 配置
+ * @param configs 配置信息
+ */
+export async function updateCosConfig(configs: any) {
+  return await db.$executeRaw`
+    UPDATE "public"."configs"
+    SET config_value = CASE
+       WHEN config_key = 'cos_secret_id' THEN ${configs.secretId}
+       WHEN config_key = 'cos_secret_key' THEN ${configs.secretKey}
+       WHEN config_key = 'cos_region' THEN ${configs.region}
+       WHEN config_key = 'cos_bucket' THEN ${configs.bucket}
+       WHEN config_key = 'cos_storage_folder' THEN ${configs.storageFolder}
+       WHEN config_key = 'cos_cdn' THEN ${configs.cosCdn}
+       WHEN config_key = 'cos_cdn_url' THEN ${configs.cosCdnUrl}
+       ELSE 'N&A'
+    END,
+        updated_at = NOW()
+    WHERE config_key IN ('cos_secret_id', 'cos_secret_key', 'cos_region', 'cos_bucket', 'cos_storage_folder', 'cos_cdn', 'cos_cdn_url');
+  `
+}
