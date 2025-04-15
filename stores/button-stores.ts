@@ -1,5 +1,5 @@
-import { createStore } from 'zustand/vanilla'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { AlbumType, ImageType, Config, CopyrightType } from '~/types'
 
 export type ButtonState = {
@@ -63,52 +63,16 @@ export type ButtonActions = {
   setCosEdit: (cosEdit: boolean) => void
   setCosEditData: (cosData: Config[]) => void
   setBatchImport: (batchImport: boolean) => void
-  setImportSource: (source: 'cos' | 'alist' | null) => void
-  setImportDialog: (open: boolean) => void
-  setImportProgress: (progress: number) => void
-  setImportTotal: (total: number) => void
-  setImportCurrent: (current: number) => void
+  setImportSource: (importSource: 'cos' | 'alist' | null) => void
+  setImportDialog: (importDialog: boolean) => void
+  setImportProgress: (importProgress: number) => void
+  setImportTotal: (importTotal: number) => void
+  setImportCurrent: (importCurrent: number) => void
 }
 
 export type ButtonStore = ButtonState & ButtonActions
 
-export const initButtonStore = (): ButtonState => {
-  return {
-    albumAdd: false,
-    albumEdit: false,
-    album: {} as AlbumType,
-    copyrightAdd: false,
-    copyrightEdit: false,
-    copyright: {} as CopyrightType,
-    imageEdit: false,
-    image: {} as ImageType,
-    imageView: false,
-    imageViewData: {} as ImageType,
-    s3Edit: false,
-    s3Data: [] as Config[],
-    r2Edit: false,
-    r2Data: [] as Config[],
-    aListEdit: false,
-    aListData: [] as Config[],
-    MasonryView: false,
-    MasonryViewData: {} as ImageType,
-    MasonryViewDataList: [] as ImageType[],
-    imageBatchDelete: false,
-    searchOpen: false,
-    loginHelp: false,
-    command: false,
-    cosEdit: false,
-    cosData: [] as Config[],
-    batchImport: false,
-    importSource: null,
-    importDialog: false,
-    importProgress: 0,
-    importTotal: 0,
-    importCurrent: 0,
-  }
-}
-
-export const defaultInitState: ButtonState = {
+const initialState: ButtonState = {
   albumAdd: false,
   albumEdit: false,
   album: {} as AlbumType,
@@ -142,114 +106,55 @@ export const defaultInitState: ButtonState = {
   importCurrent: 0,
 }
 
-export const createButtonStore = (
-  initState: ButtonState = defaultInitState,
-) => {
-  return createStore<ButtonStore>()(
-    persist(
-      (set) => ({
-        ...initState,
-        setAlbumAdd: (albumAddValue) => set(() => ({
-          albumAdd: albumAddValue,
-        })),
-        setAlbumEdit: (albumEditValue) => set(() => ({
-          albumEdit: albumEditValue,
-        })),
-        setAlbumEditData: (albumValue) => set(() => ({
-          album: albumValue,
-        })),
-        setCopyrightAdd: (copyrightAddValue) => set(() => ({
-          copyrightAdd: copyrightAddValue,
-        })),
-        setCopyrightEdit: (copyrightEditValue) => set(() => ({
-          copyrightEdit: copyrightEditValue,
-        })),
-        setCopyrightEditData: (copyrightValue) => set(() => ({
-          copyright: copyrightValue,
-        })),
-        setImageEdit: (imageEditValue) => set(() => ({
-          imageEdit: imageEditValue,
-        })),
-        setImageEditData: (imageDataValue) => set(() => ({
-          image: imageDataValue,
-        })),
-        setImageView: (imageViewValue) => set(() => ({
-          imageView: imageViewValue,
-        })),
-        setImageViewData: (imageViewDataValue) => set(() => ({
-          imageViewData: imageViewDataValue,
-        })),
-        setS3Edit: (s3EditValue) => set(() => ({
-          s3Edit: s3EditValue,
-        })),
-        setS3EditData: (s3DataValue) => set(() => ({
-          s3Data: s3DataValue,
-        })),
-        setR2Edit: (r2EditValue) => set(() => ({
-          r2Edit: r2EditValue,
-        })),
-        setR2EditData: (r2DataValue) => set(() => ({
-          r2Data: r2DataValue,
-        })),
-        setAListEdit: (aListEditValue) => set(() => ({
-          aListEdit: aListEditValue,
-        })),
-        setAListEditData: (aListDataValue) => set(() => ({
-          aListData: aListDataValue,
-        })),
-        setMasonryView: (masonryViewValue) => set(() => ({
-          MasonryView: masonryViewValue,
-        })),
-        setMasonryViewData: (masonryViewDataValue) => set(() => ({
-          MasonryViewData: masonryViewDataValue,
-        })),
-        setMasonryViewDataList: (masonryViewDataListValue) => set(() => ({
-          MasonryViewDataList: masonryViewDataListValue,
-        })),
-        setImageBatchDelete: (imageBatchDeleteValue) => set(() => ({
-          imageBatchDelete: imageBatchDeleteValue,
-        })),
-        setSearchOpen: (searchOpenValue) => set(() => ({
-          searchOpen: searchOpenValue,
-        })),
-        setLoginHelp: (loginHelpValue) => set(() => ({
-          loginHelp: loginHelpValue,
-        })),
-        setCommand: (commandValue) => set(() => ({
-          command: commandValue,
-        })),
-        setCosEdit: (cosEditValue) => set(() => ({
-          cosEdit: cosEditValue,
-        })),
-        setCosEditData: (cosDataValue) => set(() => ({
-          cosData: cosDataValue,
-        })),
-        setBatchImport: (batchImportValue) => set(() => ({
-          batchImport: batchImportValue,
-        })),
-        setImportSource: (sourceValue) => set(() => ({
-          importSource: sourceValue,
-        })),
-        setImportDialog: (openValue) => set(() => ({
-          importDialog: openValue,
-        })),
-        setImportProgress: (progressValue) => set(() => ({
-          importProgress: progressValue,
-        })),
-        setImportTotal: (totalValue) => set(() => ({
-          importTotal: totalValue,
-        })),
-        setImportCurrent: (currentValue) => set(() => ({
-          importCurrent: currentValue,
-        })),
-      }),
-      {
-        name: 'pic-impact-button-storage', // name of the item in the storage (must be unique)
-        storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
-        skipHydration: true,
+export const useButtonStore = create<ButtonState & ButtonActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      setAlbumAdd: (albumAdd) => set({ albumAdd }),
+      setAlbumEdit: (albumEdit) => set({ albumEdit }),
+      setAlbumEditData: (album) => set({ album }),
+      setCopyrightAdd: (copyrightAdd) => set({ copyrightAdd }),
+      setCopyrightEdit: (copyrightEdit) => set({ copyrightEdit }),
+      setCopyrightEditData: (copyright) => set({ copyright }),
+      setImageEdit: (imageEdit) => set({ imageEdit }),
+      setImageEditData: (image) => set({ image }),
+      setImageView: (imageView) => set({ imageView }),
+      setImageViewData: (imageViewData) => set({ imageViewData }),
+      setS3Edit: (s3Edit) => set({ s3Edit }),
+      setS3EditData: (s3Data) => set({ s3Data }),
+      setR2Edit: (r2Edit) => set({ r2Edit }),
+      setR2EditData: (r2Data) => set({ r2Data }),
+      setAListEdit: (aListEdit) => set({ aListEdit }),
+      setAListEditData: (aListData) => set({ aListData }),
+      setMasonryView: (masonryView) => set({ MasonryView: masonryView }),
+      setMasonryViewData: (masonryViewData) => set({ MasonryViewData: masonryViewData }),
+      setMasonryViewDataList: (masonryViewDataList) => set({ MasonryViewDataList: masonryViewDataList }),
+      setImageBatchDelete: (imageBatchDelete) => set({ imageBatchDelete }),
+      setSearchOpen: (searchOpen) => set({ searchOpen }),
+      setLoginHelp: (loginHelp) => set({ loginHelp }),
+      setCommand: (command) => set({ command }),
+      setCosEdit: (cosEdit) => set({ cosEdit }),
+      setCosEditData: (cosData) => set({ cosData }),
+      setBatchImport: (batchImport) => set({ batchImport }),
+      setImportSource: (importSource) => set({ importSource }),
+      setImportDialog: (importDialog) => set({ importDialog }),
+      setImportProgress: (importProgress) => set({ importProgress }),
+      setImportTotal: (importTotal) => set({ importTotal }),
+      setImportCurrent: (importCurrent) => set({ importCurrent }),
+    }),
+    {
+      name: 'button-storage',
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name)
+          if (!str) return null
+          return JSON.parse(str)
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value))
+        },
+        removeItem: (name) => localStorage.removeItem(name),
       },
-    )
+    }
   )
-}
-
-export const useButtonStore = createButtonStore()
+)
