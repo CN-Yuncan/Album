@@ -8,6 +8,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { updateAListConfig, updateCustomInfo, updateR2Config, updateS3Config, updateCosConfig } from '~/server/db/operate/configs'
 import { updatePassword, updateUserInfo } from '~/server/db/operate'
+import { batchImportImages } from '~/server/db/operate/images'
 
 const app = new Hono()
 
@@ -218,6 +219,29 @@ app.put('/update-user-info', async (c) => {
     return c.json({
       code: 200,
       message: 'Success'
+    })
+  } catch (e) {
+    throw new HTTPException(500, { message: 'Failed', cause: e })
+  }
+})
+
+app.post('/batch-import', async (c) => {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
+  
+  const { source, files } = await c.req.json()
+  if (!source || !files || !Array.isArray(files)) {
+    throw new HTTPException(400, { message: 'Invalid request' })
+  }
+
+  try {
+    const result = await batchImportImages(session.user.id, source, files)
+    return c.json({
+      code: 200,
+      message: 'Success',
+      data: result
     })
   } catch (e) {
     throw new HTTPException(500, { message: 'Failed', cause: e })

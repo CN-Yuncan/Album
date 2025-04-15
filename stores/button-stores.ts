@@ -28,6 +28,12 @@ export type ButtonState = {
   command: boolean
   cosEdit: boolean
   cosData: Config[]
+  batchImport: boolean
+  importSource: 'cos' | 'alist' | null
+  importDialog: boolean
+  importProgress: number
+  importTotal: number
+  importCurrent: number
 }
 
 export type ButtonActions = {
@@ -56,6 +62,12 @@ export type ButtonActions = {
   setCommand: (command: boolean) => void
   setCosEdit: (cosEdit: boolean) => void
   setCosEditData: (cosData: Config[]) => void
+  setBatchImport: (batchImport: boolean) => void
+  setImportSource: (source: 'cos' | 'alist' | null) => void
+  setImportDialog: (open: boolean) => void
+  setImportProgress: (progress: number) => void
+  setImportTotal: (total: number) => void
+  setImportCurrent: (current: number) => void
 }
 
 export type ButtonStore = ButtonState & ButtonActions
@@ -87,6 +99,12 @@ export const initButtonStore = (): ButtonState => {
     command: false,
     cosEdit: false,
     cosData: [] as Config[],
+    batchImport: false,
+    importSource: null,
+    importDialog: false,
+    importProgress: 0,
+    importTotal: 0,
+    importCurrent: 0,
   }
 }
 
@@ -116,6 +134,12 @@ export const defaultInitState: ButtonState = {
   command: false,
   cosEdit: false,
   cosData: [] as Config[],
+  batchImport: false,
+  importSource: null,
+  importDialog: false,
+  importProgress: 0,
+  importTotal: 0,
+  importCurrent: 0,
 }
 
 export const createButtonStore = (
@@ -199,6 +223,24 @@ export const createButtonStore = (
         })),
         setCosEditData: (cosDataValue) => set(() => ({
           cosData: cosDataValue,
+        })),
+        setBatchImport: (batchImportValue) => set(() => ({
+          batchImport: batchImportValue,
+        })),
+        setImportSource: (sourceValue) => set(() => ({
+          importSource: sourceValue,
+        })),
+        setImportDialog: (openValue) => set(() => ({
+          importDialog: openValue,
+        })),
+        setImportProgress: (progressValue) => set(() => ({
+          importProgress: progressValue,
+        })),
+        setImportTotal: (totalValue) => set(() => ({
+          importTotal: totalValue,
+        })),
+        setImportCurrent: (currentValue) => set(() => ({
+          importCurrent: currentValue,
         })),
       }),
       {
