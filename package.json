@@ -22,6 +22,7 @@
     "prebuild": "npx prisma generate"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.0.0",
     "@ant-design/nextjs-registry": "^1.0.2",
     "@auth/prisma-adapter": "^2.7.4",
     "@aws-sdk/client-s3": "^3.750.0",
@@ -57,11 +58,13 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@react-spring/core": "^9.7.5",
     "@react-spring/web": "^9.7.5",
+    "@types/antd": "^1.0.4",
     "antd": "^5.24.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "compressorjs": "^1.2.1",
+    "cos-js-sdk-v5": "^1.8.7",
     "critters": "^0.0.25",
     "crypto-js": "^4.2.0",
     "cuid": "^3.0.0",

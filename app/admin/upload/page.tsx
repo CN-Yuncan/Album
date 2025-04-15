@@ -1,7 +1,9 @@
-import FileUpload from '~/components/admin/upload/file-upload'
+import CosFileUpload from '~/components/admin/upload/cos-file-upload'
 
 export default function Upload() {
   return (
-    <FileUpload />
+    <div className="container mx-auto py-4">
+      <CosFileUpload />
+    </div>
   )
 }
