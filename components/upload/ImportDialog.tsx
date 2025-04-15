@@ -7,7 +7,7 @@ import { useButtonStore } from '~/stores/button-stores'
 import { Progress } from '~/components/ui/progress'
 
 export function ImportDialog() {
-  const { importDialog, importSource, importProgress, importTotal, importCurrent, setImportDialog } = useButtonStore()
+  const { importDialog, importSource, importProgress, importTotal, importCurrent, setImportDialog, setImportSource } = useButtonStore()
   const [selectedFiles, setSelectedFiles] = useState<{ key: string, url: string }[]>([])
   const [isImporting, setIsImporting] = useState(false)
 
@@ -50,13 +50,13 @@ export function ImportDialog() {
           <div className="flex space-x-4">
             <Button
               variant={importSource === 'cos' ? 'default' : 'outline'}
-              onClick={() => useButtonStore.setState({ importSource: 'cos' })}
+              onClick={() => setImportSource('cos')}
             >
               从腾讯云导入
             </Button>
             <Button
               variant={importSource === 'alist' ? 'default' : 'outline'}
-              onClick={() => useButtonStore.setState({ importSource: 'alist' })}
+              onClick={() => setImportSource('alist')}
             >
               从Alist导入
             </Button>
