@@ -1,7 +1,11 @@
+'use client'
+
 import { Upload } from '~/components/upload/Upload'
 import { ImportDialog } from '~/components/upload/ImportDialog'
 import { Button } from '~/components/ui/button'
-import { useButtonStore } from '~/stores/button-stores'
+import { createButtonStore } from '~/stores/button-stores'
+
+const useButtonStore = createButtonStore()
 
 export default function UploadPage() {
   const { setImportDialog } = useButtonStore()

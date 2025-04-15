@@ -251,3 +251,5 @@ export const createButtonStore = (
     )
   )
 }
+
+export const useButtonStore = createButtonStore()
