@@ -2,9 +2,8 @@
 
 'use server'
 
-import { db } from '~/server/lib/db'
+import { db, images } from '~/server/db'
 import type { ImageType } from '~/types'
-import { images } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 
 /**
