@@ -2,9 +2,8 @@
 
 'use server'
 
-import { db, images } from '~/server/db'
+import { db } from '~/server/lib/db'
 import type { ImageType } from '~/types'
-import { eq } from 'drizzle-orm'
 
 /**
  * 新增图片
@@ -177,28 +176,4 @@ export async function updateImageAlbum(imageId: string, albumId: string) {
       }
     })
   })
-}
-
-export async function batchImportImages(userId: string, source: 'cos' | 'alist', files: { key: string, url: string }[]) {
-  const imageRecords = files.map(file => ({
-    userId,
-    key: file.key,
-    url: file.url,
-    source,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }))
-
-  const result = await db.insert(images).values(imageRecords).returning()
-  return result
-}
-
-export async function fetchImagesByUserId(userId: string) {
-  const result = await db.select().from(images).where(eq(images.userId, userId))
-  return result
-}
-
-export async function deleteImageById(id: string) {
-  const result = await db.delete(images).where(eq(images.id, id)).returning()
-  return result
 }

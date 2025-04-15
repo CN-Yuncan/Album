@@ -4,7 +4,6 @@ import { fetchConfigsByKeys } from '~/server/db/query/configs'
 import { getClient } from '~/server/lib/s3'
 import { uploadSimpleObject } from '~/server/lib/s3api'
 import { getR2Client } from '~/server/lib/r2'
-import { getCosClient } from '~/server/lib/cos'
 import { HTTPException } from 'hono/http-exception'
 
 /**
@@ -170,62 +169,4 @@ export async function alistUpload(file: any, type: string | any, mountPath: stri
       throw new HTTPException(500, { message: 'Failed to retrieve file path' })
     }
   }
-}
-
-/**
- * COS API 文件上传封装
- * @param file 文件
- * @param type 上传类型 '' | '/preview'
- * @return {Promise<string>} 返回文件路径
- */
-export async function cosUpload(file: any, type: string | any) {
-  const findConfig = await fetchConfigsByKeys([
-    'cos_secret_id',
-    'cos_secret_key',
-    'cos_region',
-    'cos_bucket',
-    'cos_storage_folder',
-    'cos_cdn',
-    'cos_cdn_url'
-  ]);
-  const bucket = findConfig.find((item: any) => item.config_key === 'cos_bucket')?.config_value || '';
-  const storageFolder = findConfig.find((item: any) => item.config_key === 'cos_storage_folder')?.config_value || '';
-  const region = findConfig.find((item: any) => item.config_key === 'cos_region')?.config_value || '';
-  const cosCdn = findConfig.find((item: any) => item.config_key === 'cos_cdn')?.config_value;
-  const cosCdnUrl = findConfig.find((item: any) => item.config_key === 'cos_cdn_url')?.config_value || '';
-
-  // @ts-ignore
-  const filePath = storageFolder && storageFolder !== '/'
-    ? type && type !== '/' ? `${storageFolder}${type}/${file?.name}` : `${storageFolder}/${file?.name}`
-    : type && type !== '/' ? `${type.slice(1)}/${file?.name}` : `${file?.name}`
-
-  // @ts-ignore
-  const blob = new Blob([file])
-  const arrayBuffer = await blob.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-  const params = {
-    Bucket: bucket,
-    Key: filePath,
-    Body: buffer,
-    ContentLength: file?.size,
-    ContentType: file?.type
-  };
-  const cos = getCosClient(findConfig);
-  await uploadSimpleObject(cos, params)
-
-  if (cosCdn && cosCdn === 'true') {
-    return `https://${
-      cosCdnUrl.includes('https://') ? cosCdnUrl.split('//')[1] : cosCdnUrl
-    }/${
-      storageFolder && storageFolder !== '/'
-        ? type && type !== '/' ? `${storageFolder}${type}/${encodeURIComponent(file?.name)}` : `${storageFolder}/${encodeURIComponent(file?.name)}`
-        : type && type !== '/' ? `${type.slice(1)}/${encodeURIComponent(file?.name)}` : `${encodeURIComponent(file?.name)}`
-    }`
-  }
-
-  return `https://${bucket}.cos.${region}.myqcloud.com/${
-    storageFolder && storageFolder !== '/'
-      ? type && type !== '/' ? `${storageFolder}${type}/${encodeURIComponent(file?.name)}` : `${storageFolder}/${encodeURIComponent(file?.name)}`
-      : type && type !== '/' ? `${type.slice(1)}/${encodeURIComponent(file?.name)}` : `${encodeURIComponent(file?.name)}`
-  }`
 }

@@ -194,10 +194,6 @@ export default function SimpleFileUpload() {
       value: 'r2',
     },
     {
-      label: '腾讯云 COS',
-      value: 'cos',
-    },
-    {
       label: 'AList API',
       value: 'alist',
     }

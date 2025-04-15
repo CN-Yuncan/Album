@@ -1,34 +1,41 @@
 // app/providers/button-store-providers.tsx
 'use client'
 
-import { ReactNode, createContext, useRef, useContext } from 'react'
+import { type ReactNode, createContext, useRef, useContext } from 'react'
 import { type StoreApi, useStore } from 'zustand'
-import { useButtonStore } from '~/stores/button-stores'
-import type { ButtonStore } from '~/stores/button-stores'
 
-export const ButtonStoreContext = createContext<StoreApi<ButtonStore> | null>(null)
+import { type ButtonStore, createButtonStore, initButtonStore } from '~/stores/button-stores'
+
+export const ButtonStoreContext = createContext<StoreApi<ButtonStore> | null>(
+    null,
+)
 
 export interface ButtonStoreProviderProps {
     children: ReactNode
 }
 
-export function ButtonStoreProvider({ children }: { children: ReactNode }) {
-    const storeRef = useRef<ButtonStore>()
-    
+export const ButtonStoreProvider = ({
+                                        children,
+                                    }: ButtonStoreProviderProps) => {
+    const storeRef = useRef<StoreApi<ButtonStore>>()
     if (!storeRef.current) {
-        storeRef.current = useButtonStore(state => state)
+        storeRef.current = createButtonStore(initButtonStore())
     }
 
-    return children
+    return (
+        <ButtonStoreContext.Provider value={storeRef.current}>
+            {children}
+        </ButtonStoreContext.Provider>
+    )
 }
 
-export const useButtonStoreContext = <T,>(
+export const useButtonStore = <T,>(
     selector: (store: ButtonStore) => T,
 ): T => {
     const buttonStoreContext = useContext(ButtonStoreContext)
 
     if (!buttonStoreContext) {
-        throw new Error(`useButtonStoreContext must be use within ButtonStoreProvider`)
+        throw new Error(`useButtonStore must be use within ButtonStoreProvider`)
     }
 
     return useStore(buttonStoreContext, selector)
