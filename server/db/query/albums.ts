@@ -53,3 +53,23 @@ export async function fetchAlbumsShow() {
     ]
   });
 }
+
+/**
+ * 获取所有相册列表，无论状态如何
+ * @returns {Promise<AlbumType[]>} 相册列表
+ */
+export async function fetchAlbumAllList() {
+  return await db.albums.findMany({
+    where: {
+      del: 0
+    },
+    orderBy: [
+      {
+        sort: 'desc'
+      },
+      {
+        createdAt: 'desc'
+      }
+    ]
+  });
+}

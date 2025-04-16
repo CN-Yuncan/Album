@@ -5,6 +5,46 @@
 import { db } from '~/server/lib/db'
 
 /**
+ * 根据单个key获取配置
+ * @param key 配置键
+ * @returns 配置项
+ */
+export async function fetchConfigByKey(key: string) {
+  return await db.configs.findFirst({
+    where: {
+      config_key: key
+    },
+    select: {
+      id: true,
+      config_key: true,
+      config_value: true,
+      detail: true
+    }
+  });
+}
+
+/**
+ * 根据多个key获取配置
+ * @param keys 配置键列表
+ * @returns 配置列表
+ */
+export async function fetchConfigByKeys(keys: string[]) {
+  return await db.configs.findMany({
+    where: {
+      config_key: {
+        in: keys
+      }
+    },
+    select: {
+      id: true,
+      config_key: true,
+      config_value: true,
+      detail: true
+    }
+  });
+}
+
+/**
  * 根据 key 获取配置
  * @param keys key 列表
  * @returns 配置列表

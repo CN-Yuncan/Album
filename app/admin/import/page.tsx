@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react'
 import { Button, Card, Checkbox, Form, Input, List, Select, Spin, message } from 'antd'
-import { fetchAlbumAllList } from '~/lib/services/album'
+import { fetchAlbumAllList } from '~/server/db/query/albums'
 import { AlbumType, ImageType, UploadStorageType } from '~/types'
-import AdminContainer from '~/components/admin/admin-container'
-import { fetchConfigByKeys } from '~/lib/services/config'
+import AdminContainer from '~/components/layout/admin/app-sidebar'
+import { fetchConfigByKeys } from '~/server/db/query/configs'
 
 export default function ImportPage() {
   const [albums, setAlbums] = useState<AlbumType[]>([])
