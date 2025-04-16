@@ -548,9 +548,37 @@ export default function PreviewImage(props: Readonly<PreviewImageHandleProps>) {
           />
         )}
         
-        {/* 标题 */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md text-white font-medium">
-          {props.data?.title}
+        {/* 标题栏 - 增加返回首页按钮，特别针对移动设备 */}
+        <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
+          {/* 移动端返回首页按钮 - 左侧 */}
+          <div 
+            className={cn(
+              "w-10 h-10 sm:hidden rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm transition-all hover:bg-gray-700/70"
+            )}
+            onClick={goToHome}
+          >
+            <svg className="w-5 h-5 text-white home-mobile-btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </div>
+          
+          {/* 标题 - 中间 */}
+          <div className="px-4 py-2 rounded-full bg-black/40 backdrop-blur-md text-white font-medium">
+            {props.data?.title}
+          </div>
+          
+          {/* 移动端返回按钮 - 右侧 */}
+          <div 
+            className={cn(
+              "w-10 h-10 sm:hidden rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm transition-all hover:bg-gray-700/70"
+            )}
+            onClick={goBack}
+          >
+            <svg className="w-5 h-5 text-white back-mobile-btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </div>
         </div>
         
         {/* 上一张/下一张控制按钮 */}
@@ -580,18 +608,18 @@ export default function PreviewImage(props: Readonly<PreviewImageHandleProps>) {
           </div>
         </div>
         
-        {/* 功能按钮组 */}
+        {/* 功能按钮组 - 保留现有按钮但在移动端隐藏首页和返回 */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-3 px-4 py-3 rounded-full bg-black/40 backdrop-blur-md">
-          {/* 回到主页按钮 */}
-          <div className={cn(buttonIconClass, "home-btn")} onClick={goToHome} title="回到主页">
+          {/* 回到主页按钮 - 桌面显示，移动隐藏 */}
+          <div className={cn(buttonIconClass, "home-btn hidden sm:flex")} onClick={goToHome} title="回到主页">
             <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
           </div>
           
-          {/* 返回按钮 */}
-          <div className={cn(buttonIconClass, "back-btn")} onClick={goBack} title="返回">
+          {/* 返回按钮 - 桌面显示，移动隐藏 */}
+          <div className={cn(buttonIconClass, "back-btn hidden sm:flex")} onClick={goBack} title="返回">
             <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>

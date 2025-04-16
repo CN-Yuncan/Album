@@ -5,12 +5,12 @@ import { fetchContributors } from '~/lib/github/get-contributors'
 import { EvervaultCard, Icon } from '~/components/ui/origin/evervault-card'
 
 export default async function About() {
-  const contributors = await fetchContributors('besscroft', 'PicImpact');
+  const contributors = await fetchContributors('CN-Yuncan', 'Album');
 
   return (
     <div className="flex flex-col space-y-4 h-full flex-1 w-full mx-auto items-center p-2">
       <Link
-        href="https://github.com/besscroft/PicImpact"
+        href="https://github.com/CN-Yuncan/Album"
         target="_blank"
       >
         <Image
@@ -37,7 +37,7 @@ export default async function About() {
           />
         </svg>
 
-        <p className="whitespace-nowrap text-sm select-none">v2.4.0</p>
+        <p className="whitespace-nowrap text-sm select-none">v4.0</p>
       </span>
       <span className="select-none">Yuncan 之江影集</span>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4 xl:gap-8">
@@ -82,7 +82,7 @@ export default async function About() {
             欢迎通过爱发电赞助！
           </h2>
           <Link
-            href="https://afdian.com/a/besscroft"
+            href="https://afdian.com/a/yuncan666"
             target="_blank"
           >
             <p className="select-none text-sm border font-light dark:border-white/[0.2] border-black/[0.2] rounded-full mt-4 text-black dark:text-white px-2 py-0.5">

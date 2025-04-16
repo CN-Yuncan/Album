@@ -6,7 +6,7 @@ import { auth } from '~/server/auth'
 import CryptoJS from 'crypto-js'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { updateAListConfig, updateCustomInfo, updateR2Config, updateS3Config } from '~/server/db/operate/configs'
+import { updateAListConfig, updateCosConfig, updateCustomInfo, updateR2Config, updateS3Config } from '~/server/db/operate/configs'
 import { updatePassword, updateUserInfo } from '~/server/db/operate'
 
 const app = new Hono()
@@ -65,6 +65,23 @@ app.get('/s3-info', async (c) => {
   return c.json(data)
 })
 
+app.get('/cos-info', async (c) => {
+  try {
+    const results = await fetchConfigsByKeys([
+      'cos_secret_id',
+      'cos_secret_key',
+      'cos_region',
+      'cos_bucket',
+      'cos_storage_folder',
+      'cos_domain'
+    ])
+    return c.json(results)
+  } catch (e) {
+    console.error(e)
+    throw new HTTPException(500, { message: 'Failed', cause: e })
+  }
+})
+
 app.put('/update-alist-info', async (c) => {
   const query = await c.req.json()
 
@@ -104,6 +121,25 @@ app.put('/update-s3-info', async (c) => {
 
   const data = await updateS3Config({ accesskeyId, accesskeySecret, region, endpoint, bucket, storageFolder, forcePathStyle, s3Cdn, s3CdnUrl });
   return c.json(data)
+})
+
+app.put('/update-cos-info', async (c) => {
+  try {
+    const query = await c.req.json()
+
+    const cosSecretId = query?.find((item: Config) => item.config_key === 'cos_secret_id').config_value
+    const cosSecretKey = query?.find((item: Config) => item.config_key === 'cos_secret_key').config_value
+    const cosRegion = query?.find((item: Config) => item.config_key === 'cos_region').config_value
+    const cosBucket = query?.find((item: Config) => item.config_key === 'cos_bucket').config_value
+    const cosStorageFolder = query?.find((item: Config) => item.config_key === 'cos_storage_folder').config_value
+    const cosDomain = query?.find((item: Config) => item.config_key === 'cos_domain').config_value
+
+    const data = await updateCosConfig({ cosSecretId, cosSecretKey, cosRegion, cosBucket, cosStorageFolder, cosDomain });
+    return c.json(data)
+  } catch (e) {
+    console.error(e)
+    throw new HTTPException(500, { message: 'Failed', cause: e })
+  }
 })
 
 app.put('/update-custom-info', async (c) => {

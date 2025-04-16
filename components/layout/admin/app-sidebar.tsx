@@ -29,6 +29,7 @@ import { KeyCircleIcon } from '~/components/icons/key-circle'
 import { CogIcon } from '~/components/icons/cog'
 import { FingerprintIcon } from '~/components/icons/fingerprint'
 import { LoaderPinwheelIcon } from '~/components/icons/loader-pinwheel'
+import { ImportIcon } from '~/components/icons/import'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
@@ -45,6 +46,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: t('Link.upload'),
         url: "/admin/upload",
         icon: UploadIcon,
+      },
+      {
+        title: t('Link.import'),
+        url: "/admin/import",
+        icon: ImportIcon,
       },
       {
         title: t('Link.list'),

@@ -17,6 +17,8 @@ export type ButtonState = {
   s3Data: Config[]
   r2Edit: boolean
   r2Data: Config[]
+  cosEdit: boolean
+  cosData: Config[]
   aListEdit: boolean
   aListData: Config[]
   MasonryView: boolean
@@ -43,6 +45,8 @@ export type ButtonActions = {
   setS3EditData: (s3Data: Config[]) => void
   setR2Edit: (r2Edit: boolean) => void
   setR2EditData: (r2Data: Config[]) => void
+  setCosEdit: (cosEdit: boolean) => void
+  setCosEditData: (cosData: Config[]) => void
   setAListEdit: (aListEdit: boolean) => void
   setAListEditData: (aListData: Config[]) => void
   setMasonryView: (masonryView: boolean) => void
@@ -72,6 +76,8 @@ export const initButtonStore = (): ButtonState => {
     s3Data: [] as Config[],
     r2Edit: false,
     r2Data: [] as Config[],
+    cosEdit: false,
+    cosData: [] as Config[],
     aListEdit: false,
     aListData: [] as Config[],
     MasonryView: false,
@@ -99,6 +105,8 @@ export const defaultInitState: ButtonState = {
   s3Data: [] as Config[],
   r2Edit: false,
   r2Data: [] as Config[],
+  cosEdit: false,
+  cosData: [] as Config[],
   aListEdit: false,
   aListData: [] as Config[],
   MasonryView: false,
@@ -158,6 +166,12 @@ export const createButtonStore = (
         })),
         setR2EditData: (r2DataValue) => set(() => ({
           r2Data: r2DataValue,
+        })),
+        setCosEdit: (cosEditValue) => set(() => ({
+          cosEdit: cosEditValue,
+        })),
+        setCosEditData: (cosDataValue) => set(() => ({
+          cosData: cosDataValue,
         })),
         setAListEdit: (aListEditValue) => set(() => ({
           aListEdit: aListEditValue,
