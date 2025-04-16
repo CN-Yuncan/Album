@@ -71,7 +71,7 @@ export default function ImageBatchDeleteSheet(props : Readonly<ImageServerHandle
       }}
       modal={false}
     >
-      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" onInteractOutside={(event: any) => event.preventDefault()}>
+      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" style={{ zIndex: 9000 }} onInteractOutside={(event: any) => event.preventDefault()}>
         <SheetHeader>
           <SheetTitle>批量删除</SheetTitle>
         </SheetHeader>
@@ -111,38 +111,51 @@ export default function ImageBatchDeleteSheet(props : Readonly<ImageServerHandle
               </div>
             ))
           }
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                className="cursor-pointer"
-                disabled={data.length === 0}
-                aria-label="更新"
-              >
-                删除
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>确定要删掉？</DialogTitle>
-              </DialogHeader>
-              <div>
-                {data && data?.map((item: string) => (
-                  <div key={item}>图片 ID：{item}</div>
-                ))}
-              </div>
-              <DialogFooter>
+          <div className="flex space-x-2">
+            <Button
+              className="cursor-pointer flex-1"
+              variant="outline"
+              onClick={() => {
+                setImageBatchDelete(false)
+                setData([])
+              }}
+              aria-label="取消"
+            >
+              取消
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
                 <Button
-                  className="cursor-pointer"
-                  disabled={loading}
-                  onClick={() => submit()}
-                  aria-label="确认删除"
+                  className="cursor-pointer flex-1"
+                  disabled={data.length === 0}
+                  aria-label="更新"
                 >
-                  {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
                   删除
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>确定要删掉？</DialogTitle>
+                </DialogHeader>
+                <div>
+                  {data && data?.map((item: string) => (
+                    <div key={item}>图片 ID：{item}</div>
+                  ))}
+                </div>
+                <DialogFooter>
+                  <Button
+                    className="cursor-pointer"
+                    disabled={loading}
+                    onClick={() => submit()}
+                    aria-label="确认删除"
+                  >
+                    {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
+                    删除
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

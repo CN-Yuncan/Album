@@ -340,8 +340,8 @@ export default function SimpleFileUpload() {
   return (
     <div className="flex flex-col space-y-2 h-full flex-1">
       <div className="flex flex-col space-y-2">
-        <div className="flex space-x-2">
-          <div className="flex flex-1 w-full space-x-1">
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center space-x-1 w-full">
             <Select
               defaultValue={storage}
               onValueChange={async (value: string) => {
@@ -356,7 +356,7 @@ export default function SimpleFileUpload() {
               <SelectTrigger>
                 <SelectValue placeholder={t('Upload.selectStorage')} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[999]">
                 <SelectGroup>
                   <SelectLabel>{t('Words.album')}</SelectLabel>
                   {storages?.map((storage: any) => (
@@ -377,7 +377,7 @@ export default function SimpleFileUpload() {
               <SelectTrigger>
                 <SelectValue placeholder={t('Upload.selectAlbum')} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[999]">
                 <SelectGroup>
                   <SelectLabel>{t('Words.album')}</SelectLabel>
                   {data?.map((album: AlbumType) => (
@@ -388,15 +388,15 @@ export default function SimpleFileUpload() {
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              disabled={loading}
+              onClick={() => submit()}
+              aria-label={t('Button.submit')}
+            >
+              {loading ? <ReloadIcon className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            disabled={loading}
-            onClick={() => submit()}
-            aria-label={t('Button.submit')}
-          >
-            {loading ? <ReloadIcon className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
           {
             storageSelect && alistStorage?.length > 0 &&
             <div className="w-full">
@@ -410,7 +410,7 @@ export default function SimpleFileUpload() {
                 <SelectTrigger>
                   <SelectValue placeholder={t('Upload.selectAlistDirectory')} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[999]">
                   <SelectGroup>
                     <SelectLabel>{t('Upload.alistDirectory')}</SelectLabel>
                     {alistStorage?.map((storage: any) => (
@@ -432,7 +432,7 @@ export default function SimpleFileUpload() {
               }
             }}
           >
-            <Dragger {...props}>
+            <Dragger {...props} style={{ position: 'relative', zIndex: 5 }}>
               <p className="ant-upload-text">{t('Upload.uploadTips1')}</p>
               <p className="ant-upload-hint">
                 {t('Upload.uploadTips2')}

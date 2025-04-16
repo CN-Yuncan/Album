@@ -12,6 +12,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 import 'react-lazy-load-image-component/src/effects/blur.css'
 import { Badge } from '~/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog'
 
 export default function ImageView() {
   const t = useTranslations()
@@ -34,7 +35,7 @@ export default function ImageView() {
         }
       }}
     >
-      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2">
+      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" style={{ zIndex: 180 }}>
         <SheetHeader>
           <SheetTitle>{imageViewData.title}</SheetTitle>
         </SheetHeader>

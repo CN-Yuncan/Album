@@ -66,7 +66,7 @@ export default function ImageEditSheet(props : Readonly<ImageServerHandleProps &
       }}
       modal={false}
     >
-      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" onInteractOutside={(event: any) => event.preventDefault()}>
+      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" style={{ zIndex: 9999 }} onInteractOutside={(event: any) => event.preventDefault()}>
         <SheetHeader>
           <SheetTitle>编辑图片</SheetTitle>
         </SheetHeader>
@@ -263,15 +263,28 @@ export default function ImageEditSheet(props : Readonly<ImageServerHandleProps &
               onCheckedChange={(value) => setImageEditData({...image, show_on_mainpage: value ? 0 : 1})}
             />
           </div>
-          <Button
-            className="cursor-pointer"
-            disabled={loading}
-            onClick={() => submit()}
-            aria-label="更新"
-          >
-            {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
-            更新
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              className="cursor-pointer flex-1"
+              variant="outline"
+              onClick={() => {
+                setImageEdit(false)
+                setImageEditData({} as ImageType)
+              }}
+              aria-label="取消"
+            >
+              取消
+            </Button>
+            <Button
+              className="cursor-pointer flex-1"
+              disabled={loading}
+              onClick={() => submit()}
+              aria-label="更新"
+            >
+              {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
+              更新
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

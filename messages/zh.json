@@ -38,8 +38,8 @@
   "Button": {
     "login": "登录",
     "language": "切换语言",
-    "light": "切换至⌈白夜⌋",
-    "dark": "切换至⌈常夜⌋",
+    "light": "切换至⌈白天⌋",
+    "dark": "切换至⌈夜间⌋",
     "issue": "反馈 | 建议",
     "submit": "提交",
     "reset": "重置",

@@ -68,7 +68,7 @@ export default function AlbumEditSheet(props : Readonly<HandleProps>) {
       }}
       modal={false}
     >
-      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" onInteractOutside={(event: any) => event.preventDefault()}>
+      <SheetContent side="left" className="w-full overflow-y-auto scrollbar-hide p-2" style={{ zIndex: 9500 }} onInteractOutside={(event: any) => event.preventDefault()}>
         <SheetHeader>
           <SheetTitle>编辑相册</SheetTitle>
         </SheetHeader>
@@ -112,7 +112,7 @@ export default function AlbumEditSheet(props : Readonly<HandleProps>) {
             <input
               type="text"
               id="detail"
-              value={album?.detail}
+              value={album?.detail || ''}
               placeholder="输入详情"
               onChange={(e) => setAlbumEditData({...album, detail: e.target.value})}
               className="mt-1 w-full border-none p-0 focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
@@ -139,10 +139,10 @@ export default function AlbumEditSheet(props : Readonly<HandleProps>) {
           >
             <span className="text-xs font-medium text-gray-700"> 许可协议 </span>
 
-          <input
+            <input
               type="text"
               id="detail"
-              value={album?.license}
+              value={album?.license || ''}
               placeholder="CC BY-NC-SA 4.0"
               onChange={(e) => setAlbumEditData({...album, license: e.target.value})}
               className="mt-1 w-full border-none p-0 focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
@@ -172,9 +172,9 @@ export default function AlbumEditSheet(props : Readonly<HandleProps>) {
             </div>
             <Switch
               className="cursor-pointer"
-              checked={album?.randomShow === 1}
+              checked={album?.random_show === 1}
               onCheckedChange={(value) => {
-                setAlbumEditData({...album, randomShow: value ? 1 : 0})
+                setAlbumEditData({...album, random_show: value ? 1 : 0})
               }}
             />
           </div>
@@ -202,15 +202,28 @@ export default function AlbumEditSheet(props : Readonly<HandleProps>) {
                 </SelectContent>
               </Select>
             </div>
-          <Button
-            className="cursor-pointer"
-            disabled={loading}
-            onClick={() => submit()}
-            aria-label="更新"
-          >
-            {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
-            更新
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              className="cursor-pointer flex-1"
+              variant="outline"
+              onClick={() => {
+                setAlbumEdit(false)
+                setAlbumEditData({} as AlbumType)
+              }}
+              aria-label="取消"
+            >
+              取消
+            </Button>
+            <Button
+              className="cursor-pointer flex-1"
+              disabled={loading}
+              onClick={() => submit()}
+              aria-label="更新"
+            >
+              {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin"/>}
+              更新
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

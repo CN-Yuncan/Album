@@ -1,3 +1,4 @@
+// components/layout/header.tsx
 import Logo from '~/components/layout/logo'
 import type { AlbumDataProps } from '~/types/props'
 import HeaderIconGroup from '~/components/layout/header-icon-group'

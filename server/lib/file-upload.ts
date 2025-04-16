@@ -4,6 +4,7 @@ import { fetchConfigsByKeys } from '~/server/db/query/configs'
 import { getClient } from '~/server/lib/s3'
 import { uploadSimpleObject } from '~/server/lib/s3api'
 import { getR2Client } from '~/server/lib/r2'
+import { getCosClient } from '~/server/lib/cos'
 import { HTTPException } from 'hono/http-exception'
 
 /**
@@ -169,4 +170,69 @@ export async function alistUpload(file: any, type: string | any, mountPath: stri
       throw new HTTPException(500, { message: 'Failed to retrieve file path' })
     }
   }
+}
+
+/**
+ * 腾讯云 COS API 文件上传封装
+ * @param file 文件
+ * @param storage 存储类型
+ * @param type 上传类型 '' | '/preview'
+ * @param mountPath 挂载路径
+ * @return {Promise<string>} 返回文件路径
+ */
+export async function cosUpload(file: any, type: string | any) {
+  const findConfig = await fetchConfigsByKeys([
+    'cos_secret_id',
+    'cos_secret_key',
+    'cos_region',
+    'cos_bucket',
+    'cos_storage_folder',
+    'cos_domain'
+  ]);
+  const cosBucket = findConfig.find((item: any) => item.config_key === 'cos_bucket')?.config_value || '';
+  const cosStorageFolder = findConfig.find((item: any) => item.config_key === 'cos_storage_folder')?.config_value || '';
+  const cosDomain = findConfig.find((item: any) => item.config_key === 'cos_domain')?.config_value || '';
+  const cosRegion = findConfig.find((item: any) => item.config_key === 'cos_region')?.config_value || '';
+
+  // @ts-ignore
+  const filePath = cosStorageFolder && cosStorageFolder !== '/'
+    ? type && type !== '/' ? `${cosStorageFolder}${type}/${file?.name}` : `${cosStorageFolder}/${file?.name}`
+    : type && type !== '/' ? `${type.slice(1)}/${file?.name}` : `${file?.name}`
+
+  // @ts-ignore
+  const blob = new Blob([file])
+  const arrayBuffer = await blob.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  const cos = getCosClient(findConfig);
+  
+  return new Promise((resolve, reject) => {
+    cos.putObject({
+      Bucket: cosBucket,
+      Region: cosRegion,
+      Key: filePath,
+      Body: buffer,
+      ContentLength: file?.size,
+      ContentType: file?.type,
+      onProgress: function(progressData) {
+        console.log("COS upload progress: ", JSON.stringify(progressData));
+      }
+    }, function(err, data) {
+      if (err) {
+        console.error("COS upload error: ", err);
+        reject(err);
+        return;
+      }
+      
+      // 上传成功，返回文件URL
+      const baseUrl = cosDomain 
+        ? (cosDomain.includes('https://') ? cosDomain : `https://${cosDomain}`)
+        : `https://${cosBucket}.cos.${cosRegion}.myqcloud.com`;
+      
+      const filePath = cosStorageFolder && cosStorageFolder !== '/'
+        ? type && type !== '/' ? `${cosStorageFolder}${type}/${encodeURIComponent(file?.name)}` : `${cosStorageFolder}/${encodeURIComponent(file?.name)}`
+        : type && type !== '/' ? `${type.slice(1)}/${encodeURIComponent(file?.name)}` : `${encodeURIComponent(file?.name)}`;
+
+      resolve(`${baseUrl}/${filePath}`);
+    });
+  });
 }

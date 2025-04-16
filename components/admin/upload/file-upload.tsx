@@ -31,7 +31,7 @@ export default function FileUpload() {
             <SelectTrigger>
               <SelectValue placeholder={t('Upload.selectUploadMode')} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1050]">
               <SelectGroup>
                 <SelectItem key="singleton" value="singleton">
                   {t('Upload.simple')}

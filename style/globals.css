@@ -3,6 +3,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 添加京华老宋体字体定义 */
+@font-face {
+  font-family: 'JinghuaLaosong';
+  src: url('/fonts/JinghuaLaosong.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -85,6 +94,7 @@
 :root {
   --glow-intensity: 1;
   --font-moqugufeng: 'moqugufeng', system-ui;
+  --font-jinghua: 'JinghuaLaosong', serif;
   --radius: 0.625rem;
   --gradient-start: #6366f1;
   --gradient-end: #8b5cf6;
@@ -213,6 +223,12 @@
   * { @apply border-border outline-ring/50; }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-jinghua);
+  }
+  
+  /* 确保标题使用原有字体 */
+  h1.font-moqugufeng {
+    font-family: var(--font-moqugufeng);
   }
 }
 
@@ -357,7 +373,7 @@ button:active {
   background: var(--color);
   border-radius: 50%;
   position: fixed;
-  z-index: 999;
+  z-index: 10999;
   pointer-events: none;
   transition:
           transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -371,7 +387,7 @@ button:active {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 998;
+  z-index: 10998;
   border: 3px solid;
   animation: rgb-pulse 4s linear infinite;
   opacity: 0.9;

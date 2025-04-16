@@ -3,9 +3,11 @@ import {
   deleteBatchImage,
   deleteImage,
   insertImage,
+  batchImportImages,
   updateImage,
   updateImageShow,
-  updateImageAlbum
+  updateImageAlbum,
+  updateBatchImagesMainpage
 } from '~/server/db/operate/images'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -83,6 +85,42 @@ app.put('/update-Album', async (c) => {
     return c.json({
       code: 200,
       message: 'Success'
+    })
+  } catch (e) {
+    throw new HTTPException(500, { message: 'Failed', cause: e })
+  }
+})
+
+app.put('/batch-update-mainpage', async (c) => {
+  const { imageIds, showOnMainpage } = await c.req.json()
+  try {
+    await updateBatchImagesMainpage(imageIds, showOnMainpage);
+    return c.json({
+      code: 200,
+      message: 'Success'
+    })
+  } catch (e) {
+    throw new HTTPException(500, { message: 'Failed', cause: e })
+  }
+})
+
+app.post('/import', async (c) => {
+  try {
+    const { images, album } = await c.req.json()
+    
+    if (!album) {
+      throw new HTTPException(400, { message: '相册不能为空' })
+    }
+    
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      throw new HTTPException(400, { message: '图片不能为空' })
+    }
+    
+    const count = await batchImportImages(images, album);
+    return c.json({ 
+      code: 200, 
+      message: 'Success',
+      data: count
     })
   } catch (e) {
     throw new HTTPException(500, { message: 'Failed', cause: e })

@@ -48,6 +48,62 @@ export async function insertImage(image: ImageType) {
 }
 
 /**
+ * 批量导入图片
+ * @param images 图片数据数组
+ * @param album 相册值
+ * @returns 导入成功的图片数量
+ */
+export async function batchImportImages(images: any[], album: string) {
+  let successCount = 0
+
+  await db.$transaction(async (tx) => {
+    for (const image of images) {
+      try {
+        // 设置默认值
+        const newImage = {
+          url: image.url,
+          title: image.name || '',
+          preview_url: '',
+          video_url: '',
+          exif: {},
+          labels: [],
+          // 尝试获取图片尺寸，如果没有则设置默认值
+          width: image.width || 800,
+          height: image.height || 600,
+          detail: '',
+          lat: '',
+          lon: '',
+          type: 1,
+          show: 0, // 设置为显示
+          show_on_mainpage: 1, // 默认不显示在首页
+          sort: 0,
+          del: 0,
+        }
+
+        const resultRow = await tx.images.create({
+          data: newImage
+        })
+
+        if (resultRow) {
+          await tx.imagesAlbumsRelation.create({
+            data: {
+              imageId: resultRow.id,
+              album_value: album
+            }
+          })
+          successCount++
+        }
+      } catch (error) {
+        console.error('导入图片失败', error)
+        // 继续处理下一张图片
+      }
+    }
+  })
+
+  return successCount
+}
+
+/**
  * 逻辑删除图片
  * @param id 图片 ID
  */
@@ -175,5 +231,27 @@ export async function updateImageAlbum(imageId: string, albumId: string) {
         album_value: resultRow.album_value
       }
     })
+  })
+}
+
+/**
+ * 批量更新图片的首页显示状态
+ * @param imageIds 图片ID数组
+ * @param showOnMainpage 是否显示在首页 0显示，1不显示
+ */
+export async function updateBatchImagesMainpage(imageIds: string[], showOnMainpage: number) {
+  if (!imageIds || imageIds.length === 0) {
+    throw new Error('图片ID不能为空！')
+  }
+  
+  await db.images.updateMany({
+    where: {
+      id: {
+        in: imageIds
+      }
+    },
+    data: {
+      show_on_mainpage: showOnMainpage
+    }
   })
 }

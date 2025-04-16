@@ -4,6 +4,7 @@
   "author": "Bess Croft <besscroft@foxmail.com>",
   "packageManager": "pnpm@9.7.1",
   "scripts": {
+    "dev": "pnpm run dev:prisma && pnpm run dev:server",
     "dev:server": "next dev",
     "dev:turbopack": "next dev --turbopack",
     "dev:prisma": "pnpm run prisma:dev && pnpm run prisma:generate",
@@ -62,6 +63,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "compressorjs": "^1.2.1",
+    "cos-js-sdk-v5": "^1.8.7",
     "critters": "^0.0.25",
     "crypto-js": "^4.2.0",
     "cuid": "^3.0.0",

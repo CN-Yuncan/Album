@@ -51,10 +51,10 @@ export function DynamicBackground() {
                 backgroundSize: 'cover',
                 opacity: 0.5, // 透明度
                 filter: 'saturate(120%) contrast(100%)',
-                x: bgOffset[0],
-                y: bgOffset[1],
+                x: bgOffset.get()[0],
+                y: bgOffset.get()[1],
                 scale: bgScale,
-                blur: bgBlur
+                backdropFilter: `blur(${bgBlur.get()}px)` // 修复类型错误
             }}
         >
             <motion.div
@@ -101,17 +101,38 @@ export function MagicCursor() {
                 cursor.style.left = `${e.clientX - size / 2}px`;
                 cursor.style.top = `${e.clientY - size / 2}px`;
             }
+            if (cursorF) {
+                cursorF.style.left = `${e.clientX - sizeF / 2}px`;
+                cursorF.style.top = `${e.clientY - sizeF / 2}px`;
+            }
         };
 
         const handleMouseDown = (e: MouseEvent | TouchEvent) => {
             gsap.to('.cursor', { scale: 4.5, duration: 0.2, ease: "power3.out" });
-            gsap.to('.cursor-f', { scale: 0.4, duration: 0.2, ease: "power3.out" });
+            gsap.to('.cursor-f', { 
+                scale: 0.4, 
+                duration: 0.2, 
+                ease: "power3.out",
+                onComplete: () => {
+                    // 动画完成后让外圈消失
+                    const cursorF = document.querySelector('.cursor-f') as HTMLElement;
+                    if (cursorF) {
+                        cursorF.style.opacity = '0';
+                    }
+                }
+            });
             setClicked(true);
             const clientY = (e as TouchEvent).touches?.[0]?.clientY || (e as MouseEvent).clientY;
             setStartY(clientY);
         };
 
         const handleMouseUp = (e: MouseEvent | TouchEvent) => {
+            // 先恢复外圈的显示
+            const cursorF = document.querySelector('.cursor-f') as HTMLElement;
+            if (cursorF) {
+                cursorF.style.opacity = '0.9'; // 恢复到CSS中定义的默认值
+            }
+            
             gsap.to('.cursor', { scale: 1, duration: 0.4, ease: "elastic.out(1.2, 0.3)" });
             gsap.to('.cursor-f', { scale: 1, duration: 0.4, ease: "elastic.out(1.2, 0.3)" });
             const endY = (e as TouchEvent).changedTouches?.[0]?.clientY || (e as MouseEvent).clientY;
@@ -128,20 +149,6 @@ export function MagicCursor() {
         window.addEventListener('touchstart', handleMouseDown);
         window.addEventListener('touchend', handleMouseUp);
 
-        const animate = () => {
-            const newX = lerp(cursorX, pageX, followSpeed);
-            const newY = lerp(cursorY, pageY, followSpeed);
-            setCursorX(newX);
-            setCursorY(newY);
-            if (cursorF) {
-                cursorF.style.top = `${newY - sizeF / 2}px`;
-                cursorF.style.left = `${newX - sizeF / 2}px`;
-            }
-            requestAnimationFrame(animate);
-        };
-
-        animate();
-
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mousedown', handleMouseDown);
@@ -149,7 +156,7 @@ export function MagicCursor() {
             window.removeEventListener('touchstart', handleMouseDown);
             window.removeEventListener('touchend', handleMouseUp);
         };
-    }, [cursorX, cursorY, pageX, pageY, size, sizeF, clicked, startY]);
+    }, [clicked, startY, size, sizeF]);
 
     return (
         <>
