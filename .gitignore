@@ -1,0 +1,21 @@
+node_modules
+*.log
+dist
+.output
+.idea/
+.vercel/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# local env files
+.env
+.env.local
+
+# nextjs --experimental-https cert file
+certificates
+.vscode/
