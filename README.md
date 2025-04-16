@@ -1,11 +1,10 @@
 <h1 align="center">
 <img width="28" src="./public/maskable-icon.png">
-PicImpact-Refactoring
+之江影集 PicImpact-Refactoring
 </h1>
 
 <p align="center">
   <a href="https://github.com/besscroft/PicImpact/blob/main/LICENSE"><img src="https://img.shields.io/github/license/besscroft/PicImpact?style=flat-square" alt="许可证"></a>
-  <img src="https://img.shields.io/github/repo-size/besscroft/PicImpact?style=flat-square&color=328657" alt="存储库大小">
 </p>
 
 PicImpact 是一个支持自部署的摄影师专用的摄影作品展示网站，基于 Next.js + Hono.js 开发。
